@@ -6,6 +6,7 @@ import About from './components/pages/About'
 import Contacts from './components/pages/Contacts'
 import News from './components/pages/News'
 import Work from './components/pages/Work'
+import FooterSettings from './components/pages/FooterSettings';
 
 export default function AllRoutes() {
   return (
@@ -16,6 +17,7 @@ export default function AllRoutes() {
         <Route path="contacts" element={<Contacts />} />
         <Route path="news" element={<News />} />
         <Route path="work" element={<Work />} />
+        <Route path="footer" element={<FooterSettings />} />
       </Route>
     </Routes>
   )
