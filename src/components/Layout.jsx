@@ -16,7 +16,7 @@ export default function Layout() {
         <nav className="space-y-2">
           <Link to="/" className="block px-3 py-2 rounded hover:bg-gray-700">Home</Link>
           <Link to="/about" className="block px-3 py-2 rounded hover:bg-gray-700">About</Link>
-          <Link to="/contact" className="block px-3 py-2 rounded hover:bg-gray-700">Contact</Link>
+          <Link to="/contacts" className="block px-3 py-2 rounded hover:bg-gray-700">Contacts</Link>
           <Link to="/news" className="block px-3 py-2 rounded hover:bg-gray-700">News</Link>
           <Link to="/work" className="block px-3 py-2 rounded hover:bg-gray-700">Work</Link>
         </nav>

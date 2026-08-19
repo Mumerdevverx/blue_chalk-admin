@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter } from 'react-router-dom'
-import api from './services/api'
+import api from './api/axios'
 import AllRoutes from './allRoutes'
 import './App.css'
 
