@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import newsService from '../../services/newsService';
-import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import TipTapEditor from '../TipTapEditor';
+import NewsImageControls from '../pages/NewsImageControls'; // ✅ IMPORT
 
 function News() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ function News() {
       return;
     }
     if (!formData.image.trim()) {
-      alert('Image URL is required');
+      alert('Image is required');
       return;
     }
     if (!formData.date.trim()) {
@@ -126,21 +127,20 @@ function News() {
     setShowModal(true);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  // ✅ Read More handler - Admin panel ke andar hi detail page par le jayega
   const handleReadMore = (slug) => {
     if (slug) {
       navigate(`/news/${slug}`);
     } else {
       alert('Slug not found for this news.');
     }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   if (loading) {
@@ -193,7 +193,6 @@ function News() {
             {news.map((item) => (
               <div key={item._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="flex flex-col md:flex-row">
-                  {/* Image */}
                   <div className="md:w-1/4 h-48 md:h-auto bg-gray-200">
                     <img
                       src={item.image}
@@ -204,8 +203,6 @@ function News() {
                       }}
                     />
                   </div>
-
-                  {/* Content */}
                   <div className="flex-1 p-6">
                     <div className="flex justify-between items-start flex-wrap gap-2">
                       <div className="flex-1">
@@ -236,12 +233,9 @@ function News() {
                         </button>
                       </div>
                     </div>
-
                     <p className="text-gray-600 mt-2 line-clamp-2">
                       {item.description}
                     </p>
-
-                    {/* ✅ READ MORE BUTTON - Admin panel ke andar detail page */}
                     <div className="mt-4">
                       <button
                         onClick={() => handleReadMore(item.slug)}
@@ -250,7 +244,6 @@ function News() {
                         Read More →
                       </button>
                     </div>
-
                     <div className="flex gap-4 mt-3">
                       <span className="text-sm text-gray-400">
                         👁️ {item.views || 0} views
@@ -289,6 +282,7 @@ function News() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Title */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Title <span className="text-red-500">*</span>
@@ -304,33 +298,19 @@ function News() {
                   />
                 </div>
 
+                {/* ✅ IMAGE PICKER - REPLACES URL INPUT */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Image URL <span className="text-red-500">*</span>
+                    Image <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="url"
-                    name="image"
+                  <NewsImageControls
                     value={formData.image}
-                    onChange={handleChange}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                    onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                    label="Choose Image"
                   />
-                  {formData.image && (
-                    <div className="mt-2 h-20 w-32 overflow-hidden rounded border">
-                      <img
-                        src={formData.image}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/128x80?text=Invalid+URL';
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
 
+                {/* Date */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Date <span className="text-red-500">*</span>
@@ -346,6 +326,7 @@ function News() {
                   />
                 </div>
 
+                {/* Description */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Description <span className="text-red-500">*</span>
@@ -361,6 +342,7 @@ function News() {
                   />
                 </div>
 
+                {/* Content - TipTap Editor */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Content <span className="text-red-500">*</span>
