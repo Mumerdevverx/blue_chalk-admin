@@ -5,6 +5,7 @@ import HomePage from './components/pages/HomePage'
 import About from './components/pages/About'
 import Contacts from './components/pages/Contacts'
 import News from './components/pages/News'
+import NewsDetail from './components/pages/NewsDetail'
 import Work from './components/pages/Work'
 import FooterSettings from './components/pages/FooterSettings';
 
@@ -18,6 +19,8 @@ export default function AllRoutes() {
         <Route path="news" element={<News />} />
         <Route path="work" element={<Work />} />
         <Route path="footer" element={<FooterSettings />} />
+        <Route path="/news" element={<News />} />
+<Route path="/news/:slug" element={<NewsDetail />} />
       </Route>
     </Routes>
   )
