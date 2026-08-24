@@ -4,17 +4,18 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
 
-const TipTapEditor = ({ value, onChange, placeholder = 'Write something amazing...' }) => {
+const TipTapEditor = ({ value, onChange }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
       Image,
       Youtube,
     ],
-    content: value || `<p>${placeholder}</p>`,
+    content: value || '<p></p>',   // ✅ Empty paragraph – no placeholder text
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
-      if (html !== `<p>${placeholder}</p>` && html !== '<p></p>') {
+      // ✅ Only send if not empty
+      if (html !== '<p></p>' && html !== '<p><br></p>') {
         onChange(html);
       } else {
         onChange('');
