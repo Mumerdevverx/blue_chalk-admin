@@ -1,85 +1,35 @@
-import api from '../api/axios'
+import API from '../api/axios';
 
-export const getHomeItems = async () => {
-  try {
-    // Try /home first; if it returns 404, fallback to /items
+export const homeService = {
+  // Get all home items
+  getHomeItems: async () => {
+    const response = await API.get('/home');
+    return response.data;
+  },
+
+  // Create new home item
+  createHomeItem: async (data) => {
+    const response = await API.post('/home', data);
+    return response.data;
+  },
+
+  // Update existing home item
+  updateHomeItem: async (id, data) => {
     try {
-      const res = await api.get('/home')
-      const data = Array.isArray(res.data) ? res.data : (res.data?.data || res.data?.items || [])
-      return { success: true, data }
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        const res = await api.get('/items')
-        const data = Array.isArray(res.data) ? res.data : (res.data?.data || res.data?.items || [])
-        return { success: true, data }
-      }
-      throw err
+      // ✅ Ensure id is a string
+      const response = await API.put(`/home/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Update service error:', error.response?.data || error.message);
+      throw error;
     }
-  } catch (error) {
-    console.error('Error fetching home items:', error)
-    return { success: false, data: [], error: error.message }
+  },
+
+  // Delete home item
+  deleteHomeItem: async (id) => {
+    const response = await API.delete(`/home/${id}`);
+    return response.data;
   }
-}
+};
 
-export const createHomeItem = async (data) => {
-  try {
-    try {
-      const res = await api.post('/home', data)
-      return res.data
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        const res = await api.post('/items', data)
-        return res.data
-      }
-      throw err
-    }
-  } catch (error) {
-    console.error('Error creating home item:', error)
-    throw error
-  }
-}
-
-export const updateHomeItem = async (id, data) => {
-  try {
-    try {
-      const res = await api.put(`/home/${id}`, data)
-      return res.data
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        const res = await api.put(`/items/${id}`, data)
-        return res.data
-      }
-      throw err
-    }
-  } catch (error) {
-    console.error('Error updating home item:', error)
-    throw error
-  }
-}
-
-export const deleteHomeItem = async (id) => {
-  try {
-    try {
-      const res = await api.delete(`/home/${id}`)
-      return res.data
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        const res = await api.delete(`/items/${id}`)
-        return res.data
-      }
-      throw err
-    }
-  } catch (error) {
-    console.error('Error deleting home item:', error)
-    throw error
-  }
-}
-
-const homeService = {
-  getHomeItems,
-  createHomeItem,
-  updateHomeItem,
-  deleteHomeItem,
-}
-
-export default homeService
+export default homeService;
