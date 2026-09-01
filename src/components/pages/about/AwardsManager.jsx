@@ -137,51 +137,51 @@ export default function AwardsManager() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl">
+          <div className="bg-white rounded-lg max-w-lg w-full p-4 shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">{editingId ? 'Edit Award' : 'Add New Award'}</h2>
               <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Title *</label>
+                <label className="block text-sm font-medium mb-0">Title *</label>
                 <input
                   name="title"
                   value={form.title}
                   onChange={handleChange}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-1"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Year</label>
+                <label className="block text-sm font-medium ">Year</label>
                 <input
                   name="year"
                   value={form.year}
                   onChange={handleChange}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
+                <label className="block text-sm font-medium ">Category</label>
                 <input
                   name="category"
                   value={form.category}
                   onChange={handleChange}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Breadcrumb</label>
+                <label className="block text-sm font-medium ">Breadcrumb</label>
                 <input
                   name="breadcrumb"
                   value={form.breadcrumb}
                   onChange={handleChange}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Award Image</label>
+                <label className="block text-sm font-medium ">Award Image</label>
                 <ImagePicker
                   value={form.image}
                   onChange={(url) => setForm({ ...form, image: url })}
@@ -189,20 +189,20 @@ export default function AwardsManager() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium ">Description</label>
                 <textarea
                   name="description"
                   value={form.description}
                   onChange={handleChange}
                   rows="3"
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-1"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2 border rounded hover:bg-gray-100">
+              <div className="flex justify-end gap-2 mb-4 pt-0">
+                <button type="button" onClick={handleCloseModal} className="px-2 py-1  border rounded hover:bg-gray-100">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                <button type="submit" className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
                   {editingId ? 'Update' : 'Add'}
                 </button>
               </div>
