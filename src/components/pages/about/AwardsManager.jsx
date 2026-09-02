@@ -11,9 +11,9 @@ export default function AwardsManager() {
 
   const [form, setForm] = useState({
     title: "",
-    year: "",
-    category: "",
-    breadcrumb: "",
+    year: String(new Date().getFullYear()),
+    category: "Awards",
+    breadcrumb: "Awards",
     image: "",
     description: "",
   });
@@ -46,9 +46,9 @@ export default function AwardsManager() {
   const resetForm = () => {
     setForm({
       title: "",
-      year: "",
-      category: "",
-      breadcrumb: "",
+      year: String(new Date().getFullYear()),
+      category: "Awards",
+      breadcrumb: "Awards",
       image: "",
       description: "",
     });
@@ -66,9 +66,9 @@ export default function AwardsManager() {
 
       setForm({
         title: award.title || "",
-        year: award.year || "",
-        category: award.category || "",
-        breadcrumb: award.breadcrumb || "",
+        year: award.year || String(new Date().getFullYear()),
+        category: award.category || "Awards",
+        breadcrumb: award.breadcrumb || "Awards",
         image: award.image || "",
         description: award.description || "",
       });
