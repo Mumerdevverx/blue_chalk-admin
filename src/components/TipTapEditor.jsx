@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -9,6 +9,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 
 const TipTapEditor = ({ value, onChange }) => {
+  const savedSelection = useRef(null);
+  const [selectedColor, setSelectedColor] = useState("#000000");
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -248,14 +250,20 @@ const TipTapEditor = ({ value, onChange }) => {
             type="color"
             value={
               editor.getAttributes("textStyle").color ||
-              "#000000"
+              selectedColor
             }
+            onFocus={() => {
+              savedSelection.current = editor.state.selection;
+            }}
             onChange={(e) => {
-              editor
-                .chain()
-                .focus()
-                .setColor(e.target.value)
-                .run();
+              setSelectedColor(e.target.value);
+              const chain = editor.chain().focus();
+
+              if (savedSelection.current) {
+                chain.setTextSelection(savedSelection.current);
+              }
+
+              chain.setColor(e.target.value).run();
             }}
             className="w-7 h-7 cursor-pointer border-0 rounded"
           />
