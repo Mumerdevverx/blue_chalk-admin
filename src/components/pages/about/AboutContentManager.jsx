@@ -36,9 +36,13 @@ export default function AboutContentManager() {
   };
 
   const handleArrayChange = (e) => {
-    const arr = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-    setForm(prev => ({ ...prev, services: arr }));
-  };
+  const value = e.target.value;
+
+  setForm((prev) => ({
+    ...prev,
+    services: value.split(',').map((item) => item.trimStart()),
+  }));
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,23 +108,23 @@ export default function AboutContentManager() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden border">
           <div className="p-6 space-y-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-500">About Us (Left)</h3>
+              <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">About Us (Left)</h3>
               <p className="text-gray-800 whitespace-pre-wrap">{about.aboutUsText}</p>
             </div>
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-500">About Us (Right)</h3>
+              <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">About Us (Right)</h3>
               <p className="text-gray-800 whitespace-pre-wrap">{about.aboutUsRightText}</p>
             </div>
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-500">On Assignment Title</h3>
-              <p className="text-gray-800">{about.onAssignmentTitle}</p>
+              <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">On Assignment Title</h3>
+              <p className="text-gray-800 whitespace-pre-wrap">{about.onAssignmentTitle}</p>
             </div>
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-500">On Assignment Text</h3>
-              <p className="text-gray-800">{about.onAssignmentText}</p>
+              <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">On Assignment Text</h3>
+              <p className="text-gray-800 whitespace-pre-wrap">{about.onAssignmentText}</p>
             </div>
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-500">Services</h3>
+              <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">Services</h3>
               <div className="flex flex-wrap gap-2 mt-1">
                 {about.services.map((s, i) => (
                   <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm">
@@ -130,12 +134,12 @@ export default function AboutContentManager() {
               </div>
             </div>
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-500">Careers Text</h3>
+              <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">Careers Text</h3>
               <p className="text-gray-800 whitespace-pre-wrap">{about.careersText}</p>
             </div>
             {about.videoUrl && (
               <div className="border-t pt-4">
-                <h3 className="text-sm font-semibold text-gray-500">Video URL</h3>
+                <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">Video URL</h3>
                 <a
                   href={about.videoUrl}
                   target="_blank"
@@ -171,11 +175,11 @@ export default function AboutContentManager() {
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md border">
         <div>
-          <label className="block text-sm font-medium">About Us (Left) *</label>
+          <label className="block text-sm font-medium whitespace-pre-wrap">About Us (Left) *</label>
           <textarea name="aboutUsText" value={form.aboutUsText} onChange={handleChange} rows="4" className="w-full border rounded px-3 py-2" required />
         </div>
         <div>
-          <label className="block text-sm font-medium">About Us (Right) *</label>
+          <label className="block text-sm font-medium whitespace-pre-wrap">About Us (Right) *</label>
           <textarea name="aboutUsRightText" value={form.aboutUsRightText} onChange={handleChange} rows="4" className="w-full border rounded px-3 py-2" required />
         </div>
         <div>
@@ -186,10 +190,19 @@ export default function AboutContentManager() {
           <label className="block text-sm font-medium">On Assignment Text *</label>
           <textarea name="onAssignmentText" value={form.onAssignmentText} onChange={handleChange} rows="2" className="w-full border rounded px-3 py-2" required />
         </div>
-        <div>
-          <label className="block text-sm font-medium">Services (comma-separated) *</label>
-          <input type="text" value={form.services.join(', ')} onChange={handleArrayChange} className="w-full border rounded px-3 py-2" required />
-        </div>
+     <textarea
+  value={form.services.join('\n')}
+  onChange={(e) =>
+    setForm((prev) => ({
+      ...prev,
+      services: e.target.value.split('\n'),
+    }))
+  }
+  rows={6}
+  className="w-full border rounded px-3 py-2"
+  placeholder="Enter each service on a new line"
+  required
+/>
         <div>
           <label className="block text-sm font-medium">Careers Text *</label>
           <textarea name="careersText" value={form.careersText} onChange={handleChange} rows="4" className="w-full border rounded px-3 py-2" required />
