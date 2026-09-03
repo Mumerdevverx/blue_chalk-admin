@@ -193,7 +193,7 @@ function News() {
             {news.map((item) => (
               <div key={item._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/4 h-48 md:h-auto bg-gray-200">
+                  <div className="md:w-1/2 h-48 md:h-auto bg-gray-200">
                     <img
                       src={item.image}
                       alt={item.title}

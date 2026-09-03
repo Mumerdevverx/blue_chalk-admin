@@ -61,8 +61,8 @@ function WorkDetail() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Header: Back + Edit/Delete */}
+      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+        {/* Header */}
         <div className="p-6 border-b flex justify-between items-center flex-wrap gap-2">
           <button
             onClick={() => navigate('/work')}
@@ -70,31 +70,32 @@ function WorkDetail() {
           >
             <FiArrowLeft /> Back to all Work
           </button>
-         
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate(`/work/edit/${work._id}`)}
+              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 flex items-center gap-2"
+            >
+              <FiEdit2 /> Edit
+            </button>
+            <button
+              onClick={handleDelete}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center gap-2"
+            >
+              <FiTrash2 /> Delete
+            </button>
+          </div>
         </div>
 
-        {/* ✅ ONLY VIDEO – NO IMAGE FALLBACK */}
-      <div className="w-full bg-gray-200">
-  {work.videoUrl && (
-    <div className="aspect-video">
-      <iframe
-        src={work.videoUrl}
-        title={work.title || 'Video'}
-        className="w-[800px] h-full"
-        frameBorder="0"
-        allowFullScreen
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      />
-    </div>
-  )}
-</div>
-
-        {/* ✅ ONLY CONTENT – RICH TEXT */}
+        {/* ✅ Render the saved HTML content (includes video) */}
         <div className="p-6">
-          <div
-            className="text-gray-800 text-base leading-relaxed prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: work.aboutContent || '<p>No content provided.</p>' }}
-          />
+          {work.aboutContent ? (
+            <div
+              className="text-gray-800 text-base leading-relaxed prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: work.aboutContent }}
+            />
+          ) : (
+            <p className="text-gray-500">No content provided.</p>
+          )}
         </div>
       </div>
     </div>
