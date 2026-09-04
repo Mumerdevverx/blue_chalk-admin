@@ -1,5 +1,4 @@
 import { Node } from '@tiptap/core';
-
 export const Video = Node.create({
   name: 'video',
 

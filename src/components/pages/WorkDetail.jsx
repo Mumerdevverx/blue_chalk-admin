@@ -71,18 +71,8 @@ function WorkDetail() {
             <FiArrowLeft /> Back to all Work
           </button>
           <div className="flex gap-2">
-            <button
-              onClick={() => navigate(`/work/edit/${work._id}`)}
-              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 flex items-center gap-2"
-            >
-              <FiEdit2 /> Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center gap-2"
-            >
-              <FiTrash2 /> Delete
-            </button>
+           
+           
           </div>
         </div>
 
