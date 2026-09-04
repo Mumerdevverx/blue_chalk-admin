@@ -40,8 +40,9 @@ const TipTapEditor = ({ value, onChange }) => {
 
     editorProps: {
       attributes: {
+        // 👇 ADDED `whitespace-pre-wrap` HERE to preserve multiple spaces
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[200px] p-4 dark:prose-invert",
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[200px] p-4 dark:prose-invert whitespace-pre-wrap",
       },
     },
   });
