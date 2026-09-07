@@ -1,47 +1,262 @@
-import React from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import React, { useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Home,
+  FileText,
+  Image,
+  Handshake,
+  Trophy,
+  Users,
+  Phone,
+  Newspaper,
+  Clapperboard,
+  Settings,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 
 export default function Layout() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  function logout() {
-    localStorage.removeItem('token')
-    navigate('/login')
-  }
+  const [aboutOpen, setAboutOpen] = useState(false);
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  const aboutLinks = [
+    {
+      name: "About Content",
+      path: "/about-content",
+      icon: FileText,
+    },
+    {
+      name: "Gallery",
+      path: "/gallery",
+      icon: Image,
+    },
+    {
+      name: "Clients",
+      path: "/clients",
+      icon: Handshake,
+    },
+    {
+      name: "Awards",
+      path: "/awards",
+      icon: Trophy,
+    },
+    {
+      name: "Team",
+      path: "/team",
+      icon: Users,
+    },
+  ];
+
+  const contentLinks = [
+    {
+      name: "Contacts",
+      path: "/contacts",
+      icon: Phone,
+    },
+    {
+      name: "News",
+      path: "/news",
+      icon: Newspaper,
+    },
+    {
+      name: "Work",
+      path: "/work",
+      icon: Clapperboard,
+    },
+    {
+      name: "Footer",
+      path: "/footer",
+      icon: Settings,
+    },
+  ];
+
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-gray-800 text-white p-4">
-        <h3 className="text-xl font-bold mb-4">Admin</h3>
-        <nav className="space-y-2">
-          {/* Dashboard */}
-          <Link to="/" className="block px-3 py-2 rounded hover:bg-gray-700">🏠 Home</Link>
+    <div className="min-h-screen flex bg-gray-100">
 
-          {/* About Section – new links */}
-          <div className="mt-4 text-xs text-gray-400 uppercase tracking-wider font-semibold">About</div>
-          <Link to="/about-content" className="block px-3 py-2 rounded hover:bg-gray-700">📄 About Content</Link>
-          <Link to="/gallery" className="block px-3 py-2 rounded hover:bg-gray-700">🖼️ Gallery</Link>
-          <Link to="/clients" className="block px-3 py-2 rounded hover:bg-gray-700">🤝 Clients</Link>
-          <Link to="/awards" className="block px-3 py-2 rounded hover:bg-gray-700">🏆 Awards</Link>
-          <Link to="/team" className="block px-3 py-2 rounded hover:bg-gray-700">👥 Team</Link>
+      {/* ================= SIDEBAR ================= */}
+      <aside className="w-64 h-screen bg-gray-900 text-white flex flex-col border-r border-gray-800">
 
-          {/* Other Modules */}
-          <div className="mt-4 text-xs text-gray-400 uppercase tracking-wider font-semibold">Content</div>
-          <Link to="/contacts" className="block px-3 py-2 rounded hover:bg-gray-700">📞 Contacts</Link>
-          <Link to="/news" className="block px-3 py-2 rounded hover:bg-gray-700">📰 News</Link>
-          <Link to="/work" className="block px-3 py-2 rounded hover:bg-gray-700">🎬 Work</Link>
-          <Link to="/footer" className="block px-3 py-2 rounded hover:bg-gray-700">⚙️ Footer</Link>
-        </nav>
+        {/* ================= HEADER ================= */}
+        <div className="h-20 shrink-0 px-5 flex items-center border-b border-gray-800">
+          <div className="flex items-center gap-3">
 
-        <div className="mt-6">
-          <button onClick={logout} className="w-full bg-red-600 py-2 rounded hover:bg-red-700 transition">
-            Logout
-          </button>
+            {/* Logo */}
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+              <span className="text-gray-900 font-bold text-lg">
+                A
+              </span>
+            </div>
+
+            {/* Title */}
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">
+                Admin Panel
+              </h2>
+
+              <p className="text-xs text-gray-500">
+                Content Management
+              </p>
+            </div>
+
+          </div>
         </div>
+
+        {/* ================= NAVIGATION ================= */}
+        <nav className="flex-1 px-3 py-4 overflow-hidden">
+
+          {/* ================= HOME ================= */}
+         <Link
+  to="/"
+  title="Home"
+  className={
+    "flex items-center justify-start gap-3 w-full px-3 h-10 rounded-lg mb-4 transition-all duration-200 " +
+    (isActive("/")
+      ? "bg-white/10 text-white"
+      : "text-gray-400 hover:bg-white/5 hover:text-white")
+  }
+>
+  <Home size={20} strokeWidth={2} />
+
+  <span className="text-sm font-medium">
+    Home
+  </span>
+</Link>
+
+          {/* ================= ABOUT DROPDOWN ================= */}
+          <div className="mb-4">
+
+            <button
+              type="button"
+              onClick={() => setAboutOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-all duration-200"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                About
+              </span>
+
+              <ChevronDown
+                size={16}
+                strokeWidth={2}
+                className={
+                  "transition-transform duration-200 " +
+                  (aboutOpen ? "rotate-180" : "")
+                }
+              />
+            </button>
+
+            {/* About Links */}
+            {aboutOpen && (
+              <div className="mt-1 ml-2 space-y-1">
+
+                {aboutLinks.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 " +
+                        (active
+                          ? "bg-white/10 text-white"
+                          : "text-gray-400 hover:bg-white/5 hover:text-white")
+                      }
+                    >
+                      <Icon
+                        size={17}
+                        strokeWidth={active ? 2.2 : 1.8}
+                      />
+
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+
+              </div>
+            )}
+
+          </div>
+
+          {/* ================= CONTENT ================= */}
+          <div>
+
+            <div className="px-3 mb-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                Content
+              </p>
+            </div>
+
+            <div className="space-y-1">
+
+              {contentLinks.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 " +
+                      (active
+                        ? "bg-white/10 text-white"
+                        : "text-gray-400 hover:bg-white/5 hover:text-white")
+                    }
+                  >
+                    <Icon
+                      size={18}
+                      strokeWidth={active ? 2.2 : 1.8}
+                    />
+
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+
+            </div>
+          </div>
+
+          {/* ================= LOGOUT ================= */}
+          <div className="mt-4 pt-3 border-t border-gray-800">
+
+            <button
+              type="button"
+              onClick={logout}
+              className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            >
+              <LogOut
+                size={18}
+                strokeWidth={1.8}
+                className="group-hover:text-red-400 transition-colors"
+              />
+
+              <span className="text-sm font-medium">
+                Logout
+              </span>
+            </button>
+
+          </div>
+
+        </nav>
       </aside>
-      <main className="flex-1 p-6 bg-gray-100 min-h-screen">
-        <Outlet />
+
+      {/* ================= MAIN CONTENT ================= */}
+      <main className="flex-1 min-w-0 min-h-screen bg-gray-50 overflow-auto">
+        <div className="p-6">
+          <Outlet />
+        </div>
       </main>
+
     </div>
-  )
+  );
 }
