@@ -23,7 +23,7 @@ export default function Layout() {
 
   const logout = () => {
     localStorage.removeItem("token");
-    navigate("/login");
+    // navigate("/login");
   };
 
   const aboutLinks = [
@@ -80,10 +80,10 @@ export default function Layout() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="h-screen flex overflow-hidden bg-gray-100">
 
       {/* ================= SIDEBAR ================= */}
-      <aside className="w-64 h-screen bg-gray-900 text-white flex flex-col border-r border-gray-800">
+      <aside className="w-64 h-screen shrink-0 bg-gray-900 text-white flex flex-col border-r border-gray-800">
 
         {/* ================= HEADER ================= */}
         <div className="h-20 shrink-0 px-5 flex items-center border-b border-gray-800">
@@ -251,7 +251,7 @@ export default function Layout() {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <main className="flex-1 min-w-0 min-h-screen bg-gray-50 overflow-auto">
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto bg-gray-50">
         <div className="p-6">
           <Outlet />
         </div>
