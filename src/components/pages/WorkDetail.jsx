@@ -3,6 +3,38 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { workService } from '../../services/workService';
 
+const normalizeYouTubeVideos = (html) => {
+  if (!html || typeof window === 'undefined') return html;
+
+  const documentFragment = new DOMParser().parseFromString(html, 'text/html');
+  documentFragment.querySelectorAll('video[src]').forEach((video) => {
+    try {
+      const url = new URL(video.getAttribute('src'));
+      let videoId = '';
+
+      if (url.hostname === 'youtu.be') {
+        videoId = url.pathname.slice(1).split('/')[0];
+      } else if (url.hostname.includes('youtube.com') && url.pathname === '/watch') {
+        videoId = url.searchParams.get('v') || '';
+      }
+
+      if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return;
+
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube.com/embed/${videoId}`;
+      iframe.title = 'YouTube video';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.style.cssText = 'width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px;';
+      video.replaceWith(iframe);
+    } catch {
+      // Keep invalid or direct video URLs as native video elements.
+    }
+  });
+
+  return documentFragment.body.innerHTML;
+};
+
 function WorkDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -81,7 +113,7 @@ function WorkDetail() {
           {work.aboutContent ? (
             <div
               className="text-gray-800 text-base leading-relaxed prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: work.aboutContent }}
+              dangerouslySetInnerHTML={{ __html: normalizeYouTubeVideos(work.aboutContent) }}
             />
           ) : (
             <p className="text-gray-500">No content provided.</p>

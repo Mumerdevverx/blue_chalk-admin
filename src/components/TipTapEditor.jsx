@@ -73,9 +73,9 @@ const TipTapEditor = ({ value, onChange }) => {
 
   const Separator = () => <span className="w-px h-6 bg-gray-300 mx-1" />;
 
-  // ✅ Insert video using custom command
+  // Insert YouTube embeds or direct video files using the same editor control.
   const insertVideo = () => {
-    const url = prompt("Enter video URL (MP4, WebM, etc.):");
+    const url = prompt("Enter YouTube, MP4, or WebM video URL:");
     if (url) {
       editor.chain().focus().setVideo(url).run();
     }
