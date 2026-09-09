@@ -29,7 +29,13 @@ function News() {
     setLoading(true);
     try {
       const res = await newsService.getAllNews();
-      setNews(res.data || []);
+      const sortedNews = [...(res.data || [])].sort((firstItem, secondItem) => {
+        const firstDate = new Date(firstItem.createdAt).getTime();
+        const secondDate = new Date(secondItem.createdAt).getTime();
+
+        return firstDate - secondDate;
+      });
+      setNews(sortedNews);
     } catch (error) {
       console.error('Error loading news:', error);
       alert('Failed to load news');
