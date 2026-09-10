@@ -29,7 +29,13 @@ function News() {
     setLoading(true);
     try {
       const res = await newsService.getAllNews();
-      setNews(res.data || []);
+      const sortedNews = [...(res.data || [])].sort((firstItem, secondItem) => {
+        const firstDate = new Date(firstItem.createdAt).getTime();
+        const secondDate = new Date(secondItem.createdAt).getTime();
+
+        return firstDate - secondDate;
+      });
+      setNews(sortedNews);
     } catch (error) {
       console.error('Error loading news:', error);
       alert('Failed to load news');
@@ -193,7 +199,7 @@ function News() {
             {news.map((item) => (
               <div key={item._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/4 h-48 md:h-auto bg-gray-200">
+                  <div className="md:w-1/2 h-48 md:h-auto bg-gray-200">
                     <img
                       src={item.image}
                       alt={item.title}
