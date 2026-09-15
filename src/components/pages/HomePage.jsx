@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import homeService from '../../services/homeService'
 import { workService } from '../../services/workService'
 
 export default function HomePage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [mediaUrl, setMediaUrl] = useState('')
+  const [mediaType, setMediaType] = useState('video')
   const [title, setTitle] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Work project states
   const [works, setWorks] = useState([])
   const [selectedWorkSlug, setSelectedWorkSlug] = useState('')
-
   const [imagePage, setImagePage] = useState(1)
   const imagesPerPage = 6
 
@@ -66,18 +68,24 @@ export default function HomePage() {
     loadWorks()
   }, [refreshKey])
 
-  // ==========================================
-  // RESET PAGINATION
-  // ==========================================
   useEffect(() => {
-    setImagePage(1)
-  }, [items.length])
+    const imageCount = items.filter(
+      item => item.type?.toLowerCase() === 'image'
+    ).length
+    const lastPage = Math.max(
+      1,
+      Math.ceil(imageCount / imagesPerPage)
+    )
+
+    setImagePage(prev => Math.min(prev, lastPage))
+  }, [items])
 
   // ==========================================
   // RESET FORM
   // ==========================================
   const resetForm = () => {
     setMediaUrl('')
+    setMediaType('video')
     setTitle('')
     setSelectedWorkSlug('')
     setEditingItem(null)
@@ -88,6 +96,7 @@ export default function HomePage() {
   // ==========================================
   const handleAddVideo = () => {
     resetForm()
+    setMediaType('video')
     setShowModal(true)
   }
 
@@ -96,6 +105,7 @@ export default function HomePage() {
   // ==========================================
   const handleAddImage = () => {
     resetForm()
+    setMediaType('image')
     setShowModal(true)
   }
 
@@ -110,6 +120,7 @@ export default function HomePage() {
 
     setEditingItem(item)
     setMediaUrl(item.mediaUrl || '')
+    setMediaType(item.type || 'video')
     setTitle(item.title || '')
     setSelectedWorkSlug(item.workSlug || '')
     setShowModal(true)
@@ -129,23 +140,9 @@ export default function HomePage() {
     setSaving(true)
 
     try {
-      let type = 'video'
-
-      if (editingItem) {
-        type = editingItem.type || 'video'
-      } else {
-        const url = mediaUrl.trim().toLowerCase()
-
-        if (
-          url.includes('.jpg') ||
-          url.includes('.png') ||
-          url.includes('.jpeg') ||
-          url.includes('.gif') ||
-          url.includes('.webp')
-        ) {
-          type = 'image'
-        }
-      }
+      const type = editingItem
+        ? editingItem.type || mediaType
+        : mediaType
 
       const data = {
         title: title.trim() || 'Untitled',
@@ -158,7 +155,10 @@ export default function HomePage() {
         isActive: true,
         order: editingItem
           ? editingItem.order
-          : items.length + 1
+          : Math.max(
+              0,
+              ...items.map(item => Number(item.order) || 0)
+            ) + 1
       }
 
       console.log('📤 Saving Home Item:', data)
@@ -177,6 +177,13 @@ export default function HomePage() {
 
       setShowModal(false)
       resetForm()
+
+      if (!editingItem && type === 'image') {
+        setImagePage(
+          Math.ceil((imageItems.length + 1) / imagesPerPage)
+        )
+      }
+
       setRefreshKey(prev => prev + 1)
 
     } catch (err) {
@@ -214,6 +221,12 @@ export default function HomePage() {
         err.message ||
         'Delete failed'
       )
+    }
+  }
+
+  const handleReadMore = (workSlug) => {
+    if (workSlug) {
+      navigate(`/work/${workSlug}`)
     }
   }
 
@@ -282,9 +295,6 @@ export default function HomePage() {
     ? videoItems[videoItems.length - 1]
     : null
 
-  // ==========================================
-  // IMAGE PAGINATION
-  // ==========================================
   const totalImagePages =
     Math.ceil(imageItems.length / imagesPerPage) || 1
 
@@ -293,31 +303,27 @@ export default function HomePage() {
     imagePage * imagesPerPage
   )
 
-  // ==========================================
-  // PAGE NUMBERS
-  // ==========================================
   const renderPageNumbers = () => {
     const pages = []
 
-    for (let i = 1; i <= totalImagePages; i++) {
+    for (let page = 1; page <= totalImagePages; page += 1) {
       pages.push(
         <button
-          key={i}
-          onClick={() => setImagePage(i)}
+          key={page}
+          onClick={() => setImagePage(page)}
           className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
-            i === imagePage
+            page === imagePage
               ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
               : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
           }`}
         >
-          {i}
+          {page}
         </button>
       )
     }
 
     return pages
   }
-
 
   const decodeHtmlEntities = (text) => {
   if (!text) return "";
@@ -557,11 +563,9 @@ export default function HomePage() {
               </h3>
 
               {totalImagePages > 1 && (
-
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   Page {imagePage} of {totalImagePages}
                 </span>
-
               )}
 
             </div>
@@ -595,9 +599,6 @@ export default function HomePage() {
                       imageItems[
                         imageItems.length - 1
                       ]?._id
-                    const displayOrder =
-                      (imagePage - 1) * imagesPerPage + index + 1
-
                     return (
 
                       <div
@@ -646,7 +647,7 @@ export default function HomePage() {
                                 'Untitled'}
                             </p>
                             <span className="flex-shrink-0 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                              Order: {displayOrder}
+                              Order: {(imagePage - 1) * imagesPerPage + index + 1}
                             </span>
                           </div>
 
@@ -681,6 +682,15 @@ export default function HomePage() {
 
                           </div>
 
+                          {item.workSlug && (
+                            <button
+                              onClick={() => handleReadMore(item.workSlug)}
+                              className="w-full mt-2 px-2 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-[10px] font-semibold transition-all"
+                            >
+                              Read More
+                            </button>
+                          )}
+
                         </div>
 
                       </div>
@@ -690,23 +700,14 @@ export default function HomePage() {
 
                 </div>
 
-                {/* ==========================================
-                    PAGINATION
-                ========================================== */}
                 {totalImagePages > 1 && (
-
                   <div className="flex flex-wrap items-center justify-center gap-2 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-
                     <button
-                      onClick={() =>
-                        setImagePage(prev =>
-                          Math.max(prev - 1, 1)
-                        )
-                      }
+                      onClick={() => setImagePage(prev => Math.max(prev - 1, 1))}
                       disabled={imagePage === 1}
                       className="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
-                      ← Prev
+                      Prev
                     </button>
 
                     <div className="flex gap-1">
@@ -714,25 +715,13 @@ export default function HomePage() {
                     </div>
 
                     <button
-                      onClick={() =>
-                        setImagePage(prev =>
-                          Math.min(
-                            prev + 1,
-                            totalImagePages
-                          )
-                        )
-                      }
-                      disabled={
-                        imagePage ===
-                        totalImagePages
-                      }
+                      onClick={() => setImagePage(prev => Math.min(prev + 1, totalImagePages))}
+                      disabled={imagePage === totalImagePages}
                       className="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
-                      Next →
+                      Next
                     </button>
-
                   </div>
-
                 )}
 
               </>
