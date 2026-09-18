@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import newsService from '../../services/newsService';
+import getImageUrl from '../../utils/imageUrl';
 
 function NewsDetail() {
   const { slug } = useParams();
@@ -87,7 +88,7 @@ function NewsDetail() {
         {/* Image */}
         <div className="w-full h-96 bg-gray-200">
           <img
-            src={news.image}
+            src={getImageUrl(news.image)}
             alt={news.title}
             className="w-full h-full object-cover"
             onError={(e) => {

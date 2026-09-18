@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import API from "../../../api/axios";
 import ImagePicker from "../../ImagePicker";
 import TipTapEditor from "../../TipTapEditor";
+import getImageUrl from "../../../utils/imageUrl";
 
 export default function AwardsManager() {
   const [awards, setAwards] = useState([]);
@@ -29,7 +30,7 @@ export default function AwardsManager() {
     try {
       setLoading(true);
 
-      const res = await API.get("/awards");
+      const res = await API.get("/api/awards");
 
       setAwards(res.data.data || []);
     } catch (error) {
@@ -129,10 +130,10 @@ export default function AwardsManager() {
     try {
       if (editingId) {
         // UPDATE
-        await API.put(`/awards/${editingId}`, form);
+        await API.put(`/api/awards/${editingId}`, form);
       } else {
         // CREATE
-        await API.post("/awards", form);
+        await API.post("/api/awards", form);
       }
 
       handleCloseModal();
@@ -158,7 +159,7 @@ export default function AwardsManager() {
     if (!confirmed) return;
 
     try {
-      await API.delete(`/awards/${id}`);
+      await API.delete(`/api/awards/${id}`);
 
       await loadAwards();
     } catch (error) {
@@ -174,18 +175,6 @@ export default function AwardsManager() {
   // =========================
   // IMAGE URL
   // =========================
-  const getImageUrl = (url) => {
-    if (!url) {
-      return "https://via.placeholder.com/400x300?text=No+Image";
-    }
-
-    if (url.startsWith("http")) {
-      return url;
-    }
-
-    return `http://localhost:5000${url}`;
-  };
-
   // =========================
   // LOADING
   // =========================

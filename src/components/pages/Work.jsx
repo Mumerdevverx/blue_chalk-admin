@@ -4,6 +4,7 @@ import { workService } from '../../services/workService';
 import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
+import getImageUrl from '../../utils/imageUrl';
 
 function Work() {
   const navigate = useNavigate();
@@ -117,12 +118,6 @@ function Work() {
     } else {
       alert('Slug not found for this work.');
     }
-  };
-
-  const getImageUrl = (url) => {
-    if (!url) return 'https://via.placeholder.com/400x300?text=No+Image';
-    if (url.startsWith('http')) return url;
-    return `http://localhost:5000${url}`;
   };
 
   if (loading) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../../api/axios';
 import ImagePicker from '../../ImagePicker';
+import getImageUrl from '../../../utils/imageUrl';
 
 export default function TeamManager() {
   const [members, setMembers] = useState([]);
@@ -16,7 +17,7 @@ export default function TeamManager() {
   useEffect(() => { loadMembers(); }, []);
 
   const loadMembers = async () => {
-    const res = await API.get('/team');
+    const res = await API.get('/api/team');
     setMembers(res.data.data || []);
     setLoading(false);
   };
@@ -65,9 +66,9 @@ export default function TeamManager() {
     if (!form.name || !form.image || !form.hoverImage) return alert('Name, Image, and Hover Image required');
     try {
       if (editingId) {
-        await API.put(`/team/${editingId}`, form);
+        await API.put(`/api/team/${editingId}`, form);
       } else {
-        await API.post('/team', form);
+        await API.post('/api/team', form);
       }
       handleCloseModal();
       loadMembers();
@@ -78,15 +79,8 @@ export default function TeamManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this member?')) return;
-    await API.delete(`/team/${id}`);
+    await API.delete(`/api/team/${id}`);
     loadMembers();
-  };
-
-  // ✅ Helper to get full image URL
-  const getImageUrl = (url) => {
-    if (!url) return 'https://via.placeholder.com/400x400?text=No+Image';
-    if (url.startsWith('http')) return url;
-    return `http://localhost:5000${url}`;
   };
 
   if (loading) return <div className="p-6">Loading...</div>;

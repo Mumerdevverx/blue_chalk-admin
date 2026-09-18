@@ -19,7 +19,7 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://blue-chalk-backend.vercel.app
 ```
 
 Start the development server:

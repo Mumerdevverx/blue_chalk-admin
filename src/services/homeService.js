@@ -3,13 +3,13 @@ import API from '../api/axios';
 export const homeService = {
   // Get all home items
   getHomeItems: async () => {
-    const response = await API.get('/home');
+    const response = await API.get('/api/home');
     return response.data;
   },
 
   // Create new home item
   createHomeItem: async (data) => {
-    const response = await API.post('/home', data);
+    const response = await API.post('/api/home', data);
     return response.data;
   },
 
@@ -17,7 +17,7 @@ export const homeService = {
   updateHomeItem: async (id, data) => {
     try {
       // ✅ Ensure id is a string
-      const response = await API.put(`/home/${id}`, data);
+      const response = await API.put(`/api/home/${id}`, data);
       return response.data;
     } catch (error) {
       console.error('❌ Update service error:', error.response?.data || error.message);
@@ -27,7 +27,7 @@ export const homeService = {
 
   // Delete home item
   deleteHomeItem: async (id) => {
-    const response = await API.delete(`/home/${id}`);
+    const response = await API.delete(`/api/home/${id}`);
     return response.data;
   }
 };

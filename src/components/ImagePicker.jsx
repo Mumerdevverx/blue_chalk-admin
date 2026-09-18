@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { FiUpload, FiX } from 'react-icons/fi';
 import API from '../api/axios';
+import getImageUrl from '../utils/imageUrl';
 
 const ImagePicker = ({ value, onChange, label = 'Choose Image' }) => {
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState(value || '');
+  const [preview, setPreview] = useState(getImageUrl(value));
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -22,14 +23,13 @@ const ImagePicker = ({ value, onChange, label = 'Choose Image' }) => {
     formData.append('image', file);
 
     try {
-      const response = await API.post('/upload', formData, {
+      const response = await API.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
-        const relativeUrl = response.data.data.url; // '/uploads/filename.jpg'
-        const fullPreviewUrl = `http://localhost:5000${relativeUrl}`; // ✅ FULL URL FOR PREVIEW
-        setPreview(fullPreviewUrl);
-        onChange(relativeUrl); // Store relative path
+        const imageUrl = getImageUrl(response.data.data.url);
+        setPreview(imageUrl);
+        onChange(imageUrl);
         alert('✅ Image uploaded successfully!');
       }
     } catch (error) {
