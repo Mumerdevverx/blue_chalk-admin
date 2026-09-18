@@ -4,6 +4,7 @@ import newsService from '../../services/newsService';
 import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import TipTapEditor from '../TipTapEditor';
 import NewsImageControls from '../pages/NewsImageControls'; // ✅ IMPORT
+import getImageUrl from '../../utils/imageUrl';
 
 function News() {
   const navigate = useNavigate();
@@ -201,7 +202,7 @@ function News() {
                 <div className="flex flex-col md:flex-row">
                   <div className="md:w-1/2 h-48 md:h-auto bg-gray-200">
                     <img
-                      src={item.image}
+                      src={getImageUrl(item.image)}
                       alt={item.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {

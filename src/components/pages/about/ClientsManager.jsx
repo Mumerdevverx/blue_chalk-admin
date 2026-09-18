@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../../api/axios';
 import ImagePicker from '../../ImagePicker';
+import getImageUrl from '../../../utils/imageUrl';
 
 export default function ClientsManager() {
   const [logos, setLogos] = useState([]);
@@ -57,13 +58,6 @@ export default function ClientsManager() {
     if (!confirm('Delete this logo?')) return;
     await API.delete(`/clients/${id}`);
     loadLogos();
-  };
-
-  // ✅ Helper to get full image URL
-  const getImageUrl = (url) => {
-    if (!url) return 'https://via.placeholder.com/400x300?text=No+Image';
-    if (url.startsWith('http')) return url;
-    return `http://localhost:5000${url}`;
   };
 
   if (loading) return <div className="p-6">Loading...</div>;

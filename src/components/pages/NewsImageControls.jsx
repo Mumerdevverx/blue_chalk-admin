@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { FiUpload, FiX } from 'react-icons/fi';
 import API from '../../api/axios';
+import getImageUrl from '../../utils/imageUrl';
 
 const NewsImageControls = ({ value, onChange, label = 'Choose Image' }) => {
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState(value || '');
+  const [preview, setPreview] = useState(getImageUrl(value));
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -26,8 +27,7 @@ const NewsImageControls = ({ value, onChange, label = 'Choose Image' }) => {
       console.log('📦 Upload Response:', response.data); // ✅ DEBUG
 
       if (response.data.success) {
-        // ✅ FULL URL BANAO
-        const url = `http://localhost:5000${response.data.data.url}`;
+        const url = getImageUrl(response.data.data.url);
         console.log('✅ Image URL:', url); // ✅ DEBUG
         setPreview(url);
         onChange(url);

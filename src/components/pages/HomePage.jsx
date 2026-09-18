@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import homeService from '../../services/homeService'
 import { workService } from '../../services/workService'
+import getImageUrl from '../../utils/imageUrl'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -613,7 +614,7 @@ export default function HomePage() {
                         <div className="relative w-full aspect-video bg-slate-950">
 
                           <img
-                            src={item.mediaUrl}
+                            src={getImageUrl(item.mediaUrl)}
                             alt={
                               item.title ||
                               'Image'

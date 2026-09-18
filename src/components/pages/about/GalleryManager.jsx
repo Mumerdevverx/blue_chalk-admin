@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../../api/axios';
 import ImagePicker from '../../ImagePicker';
+import getImageUrl from '../../../utils/imageUrl';
 
 export default function GalleryManager() {
   const [images, setImages] = useState([]);
@@ -57,13 +58,6 @@ export default function GalleryManager() {
     if (!confirm('Delete this image?')) return;
     await API.delete(`/gallery/${id}`);
     loadImages();
-  };
-
-  // ✅ Helper: Convert relative URL to full backend URL
-  const getImageUrl = (url) => {
-    if (!url) return 'https://via.placeholder.com/400x300?text=No+Image';
-    if (url.startsWith('http')) return url;
-    return `http://localhost:5000${url}`;
   };
 
   if (loading) return <div className="p-6">Loading...</div>;

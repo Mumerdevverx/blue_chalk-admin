@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import API from "../../../api/axios";
 import ImagePicker from "../../ImagePicker";
 import TipTapEditor from "../../TipTapEditor";
+import getImageUrl from "../../../utils/imageUrl";
 
 export default function AwardsManager() {
   const [awards, setAwards] = useState([]);
@@ -174,18 +175,6 @@ export default function AwardsManager() {
   // =========================
   // IMAGE URL
   // =========================
-  const getImageUrl = (url) => {
-    if (!url) {
-      return "https://via.placeholder.com/400x300?text=No+Image";
-    }
-
-    if (url.startsWith("http")) {
-      return url;
-    }
-
-    return `http://localhost:5000${url}`;
-  };
-
   // =========================
   // LOADING
   // =========================
