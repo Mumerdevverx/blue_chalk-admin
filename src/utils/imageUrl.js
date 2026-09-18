@@ -1,4 +1,4 @@
-const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://blue-chalk-backend.vercel.app/api'
+const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://blue-chalk-backend.vercel.app'
 
 const getBackendOrigin = () => {
   try {
@@ -18,12 +18,18 @@ export const getImageUrl = (url) => {
   if (!value) return ''
   if (value.startsWith('data:') || value.startsWith('blob:')) return value
 
-  if (value.startsWith('http://localhost:5000') || value.startsWith('http://127.0.0.1:5000')) {
-    const legacyPath = value.replace(/^https?:\/\/[^/]+/, '')
-    return `${backendOrigin}${legacyPath.replace(/^\/api(?=\/uploads(?:\/|$))/, '')}`
-  }
+  if (/^https?:\/\//i.test(value)) {
+    const parsedUrl = new URL(value)
 
-  if (/^https?:\/\//i.test(value)) return value
+    if (
+      (parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1') &&
+      parsedUrl.port === '5000'
+    ) {
+      return `${backendOrigin}${parsedUrl.pathname.replace(/^\/api(?=\/uploads(?:\/|$))/, '')}${parsedUrl.search}`
+    }
+
+    return value
+  }
 
   const path = value.startsWith('/') ? value : `/${value}`
   return `${backendOrigin}${path.replace(/^\/api(?=\/uploads(?:\/|$))/, '')}`

@@ -23,7 +23,7 @@ const ImagePicker = ({ value, onChange, label = 'Choose Image' }) => {
     formData.append('image', file);
 
     try {
-      const response = await API.post('/upload', formData, {
+      const response = await API.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {

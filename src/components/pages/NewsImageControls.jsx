@@ -21,7 +21,7 @@ const NewsImageControls = ({ value, onChange, label = 'Choose Image' }) => {
     formData.append('image', file);
 
     try {
-      const response = await API.post('/upload', formData, {
+      const response = await API.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       console.log('📦 Upload Response:', response.data); // ✅ DEBUG

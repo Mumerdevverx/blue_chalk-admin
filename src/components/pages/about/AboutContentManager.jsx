@@ -19,7 +19,7 @@ export default function AboutContentManager() {
 
   const loadAbout = async () => {
     try {
-      const res = await API.get('/about');
+      const res = await API.get('/api/about');
       if (res.data.success) {
         setAbout(res.data.data);
         setForm(res.data.data);
@@ -48,9 +48,9 @@ export default function AboutContentManager() {
     e.preventDefault();
     try {
       if (about) {
-        await API.put('/about', form);
+        await API.put('/api/about', form);
       } else {
-        await API.post('/about', form);
+        await API.post('/api/about', form);
       }
       alert('✅ Saved!');
       loadAbout();
@@ -63,7 +63,7 @@ export default function AboutContentManager() {
   const handleDelete = async () => {
     if (!confirm('Delete all about content?')) return;
     try {
-      await API.delete('/about');
+      await API.delete('/api/about');
       setAbout(null);
       setForm({
         aboutUsText: '',

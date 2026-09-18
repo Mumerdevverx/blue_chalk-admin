@@ -30,7 +30,7 @@ export default function AwardsManager() {
     try {
       setLoading(true);
 
-      const res = await API.get("/awards");
+      const res = await API.get("/api/awards");
 
       setAwards(res.data.data || []);
     } catch (error) {
@@ -130,10 +130,10 @@ export default function AwardsManager() {
     try {
       if (editingId) {
         // UPDATE
-        await API.put(`/awards/${editingId}`, form);
+        await API.put(`/api/awards/${editingId}`, form);
       } else {
         // CREATE
-        await API.post("/awards", form);
+        await API.post("/api/awards", form);
       }
 
       handleCloseModal();
@@ -159,7 +159,7 @@ export default function AwardsManager() {
     if (!confirmed) return;
 
     try {
-      await API.delete(`/awards/${id}`);
+      await API.delete(`/api/awards/${id}`);
 
       await loadAwards();
     } catch (error) {

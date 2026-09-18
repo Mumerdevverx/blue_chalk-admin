@@ -13,7 +13,7 @@ export default function GalleryManager() {
   useEffect(() => { loadImages(); }, []);
 
   const loadImages = async () => {
-    const res = await API.get('/gallery');
+    const res = await API.get('/api/gallery');
     setImages(res.data.data || []);
     setLoading(false);
   };
@@ -43,9 +43,9 @@ export default function GalleryManager() {
     if (!form.imageUrl) return alert('Image URL required');
     try {
       if (editingId) {
-        await API.put(`/gallery/${editingId}`, form);
+        await API.put(`/api/gallery/${editingId}`, form);
       } else {
-        await API.post('/gallery', form);
+        await API.post('/api/gallery', form);
       }
       handleCloseModal();
       loadImages();
@@ -56,7 +56,7 @@ export default function GalleryManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this image?')) return;
-    await API.delete(`/gallery/${id}`);
+    await API.delete(`/api/gallery/${id}`);
     loadImages();
   };
 

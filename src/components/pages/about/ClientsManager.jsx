@@ -13,7 +13,7 @@ export default function ClientsManager() {
   useEffect(() => { loadLogos(); }, []);
 
   const loadLogos = async () => {
-    const res = await API.get('/clients');
+    const res = await API.get('/api/clients');
     setLogos(res.data.data || []);
     setLoading(false);
   };
@@ -43,9 +43,9 @@ export default function ClientsManager() {
     if (!form.imageUrl) return alert('Image URL required');
     try {
       if (editingId) {
-        await API.put(`/clients/${editingId}`, form);
+        await API.put(`/api/clients/${editingId}`, form);
       } else {
-        await API.post('/clients', form);
+        await API.post('/api/clients', form);
       }
       handleCloseModal();
       loadLogos();
@@ -56,7 +56,7 @@ export default function ClientsManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this logo?')) return;
-    await API.delete(`/clients/${id}`);
+    await API.delete(`/api/clients/${id}`);
     loadLogos();
   };
 

@@ -17,7 +17,7 @@ export default function TeamManager() {
   useEffect(() => { loadMembers(); }, []);
 
   const loadMembers = async () => {
-    const res = await API.get('/team');
+    const res = await API.get('/api/team');
     setMembers(res.data.data || []);
     setLoading(false);
   };
@@ -66,9 +66,9 @@ export default function TeamManager() {
     if (!form.name || !form.image || !form.hoverImage) return alert('Name, Image, and Hover Image required');
     try {
       if (editingId) {
-        await API.put(`/team/${editingId}`, form);
+        await API.put(`/api/team/${editingId}`, form);
       } else {
-        await API.post('/team', form);
+        await API.post('/api/team', form);
       }
       handleCloseModal();
       loadMembers();
@@ -79,7 +79,7 @@ export default function TeamManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this member?')) return;
-    await API.delete(`/team/${id}`);
+    await API.delete(`/api/team/${id}`);
     loadMembers();
   };
 
