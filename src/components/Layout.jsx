@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Home,
   FileText,
@@ -14,17 +14,13 @@ import {
   LogOut,
   ChevronDown,
 } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 export default function Layout() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
 
   const [aboutOpen, setAboutOpen] = useState(false);
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    // navigate("/login");
-  };
 
   const aboutLinks = [
     {

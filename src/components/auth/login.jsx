@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import api from '../../services/api'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -8,19 +8,17 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const res = await api.post('/api/auth/login', { email, password })
-      const { token } = res.data
-      localStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      navigate('/dashboard')
+      await login(email, password)
+      navigate('/')
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed')
+      setError(err.response?.data?.message || 'Invalid email or password')
     } finally {
       setLoading(false)
     }
@@ -42,6 +40,9 @@ export default function Login() {
         <button disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded">
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
+        <Link to="/signup" className="block mt-4 text-center text-sm text-blue-600">
+          Create an account
+        </Link>
       </form>
     </div>
   )
