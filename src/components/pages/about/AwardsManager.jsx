@@ -222,7 +222,18 @@ export default function AwardsManager() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {awards.map((award) => (
+          {[...awards]
+            .sort((first, second) => {
+              const firstOrder = Number(first.order);
+              const secondOrder = Number(second.order);
+
+              if (Number.isFinite(firstOrder) && Number.isFinite(secondOrder)) {
+                return firstOrder - secondOrder;
+              }
+
+              return new Date(first.createdAt) - new Date(second.createdAt);
+            })
+            .map((award) => (
             <div
               key={award._id}
               className="bg-white rounded-lg shadow-md overflow-hidden border flex flex-col"
@@ -239,6 +250,7 @@ export default function AwardsManager() {
 
               <div className="p-3 flex flex-col flex-1">
                 <h3 className="font-bold text-sm truncate">{award.title}</h3>
+
                 {/* <p className="text-xs text-gray-600">
                   {award.year || "-"} - {award.category || "-"}
                 </p>
