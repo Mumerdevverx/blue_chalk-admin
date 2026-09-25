@@ -12,6 +12,7 @@ import Work from './components/pages/Work'
 import WorkDetail from './components/pages/WorkDetail'
 import FooterSettings from './components/pages/FooterSettings'
 
+
 // ✅ Correct imports (inside components/pages/about/)
 import AboutContentManager from './components/pages/about/AboutContentManager'
 import GalleryManager from './components/pages/about/GalleryManager'
