@@ -17,6 +17,7 @@ function Work() {
     category: 'All Projects',
     image: '',
     buttonText: 'Watch Now',
+    award: '',
     aboutContent: '',
     showOverlay: false,
     overlayType: ''
@@ -92,6 +93,7 @@ function Work() {
       category: 'All Projects',
       image: '',
       buttonText: 'Watch Now',
+      award: '',
       aboutContent: '',
       showOverlay: false,
       overlayType: ''
@@ -105,6 +107,7 @@ function Work() {
       category: work.category || 'All Projects',
       image: work.image || '',
       buttonText: work.buttonText || 'Watch Now',
+      award: work.award || '',
       aboutContent: work.aboutContent || '',
       showOverlay: work.showOverlay || false,
       overlayType: work.overlayType || ''
@@ -159,6 +162,11 @@ function Work() {
                 <p className="text-sm text-gray-600 mt-1">
                   <span className="font-medium">Title Button:</span> {item.buttonText || 'Watch Now'}
                 </p>
+                {item.award && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Award:</span> {item.award}
+                  </p>
+                )}
 
                 {/* ✅ Edit / Delete (left) and Read More (right) */}
                 <div className="flex items-center justify-between mt-3">
@@ -203,6 +211,7 @@ function Work() {
                     <option value="Entertainment">Entertainment</option>
                     <option value="Social Impact">Social Impact</option>
                     <option value="Documentary">Documentary</option>
+                    <option value="Award">Award</option>
                   </select>
                 </div>
 
@@ -224,6 +233,17 @@ function Work() {
                     value={formData.buttonText}
                     onChange={handleChange}
                     placeholder="Watch Now"
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Award</label>
+                  <input
+                    name="award"
+                    value={formData.award}
+                    onChange={handleChange}
+                    placeholder="e.g. Cannes Lions"
                     className="w-full p-2 border rounded"
                   />
                 </div>
