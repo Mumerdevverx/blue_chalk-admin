@@ -9,6 +9,7 @@ import getImageUrl from '../../utils/imageUrl';
 function Work() {
   const navigate = useNavigate();
   const [works, setWorks] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingWork, setEditingWork] = useState(null);
@@ -22,6 +23,18 @@ function Work() {
     showOverlay: false,
     overlayType: ''
   });
+  const categories = [
+    { label: 'All', value: 'All' },
+    { label: 'Featured', value: 'Featured' },
+    { label: 'Brand', value: 'Branded' },
+    { label: 'Entertainment', value: 'Entertainment' },
+    { label: 'Social Impact', value: 'Social Impact' },
+    { label: 'Documentary', value: 'Documentary' },
+    { label: 'Award', value: 'Award' }
+  ];
+  const filteredWorks = activeCategory === 'All'
+    ? works
+    : works.filter((item) => item.category === activeCategory);
 
   useEffect(() => {
     loadWorks();
@@ -146,8 +159,29 @@ function Work() {
           </div>
         </div>
 
+        <div className="mb-6 overflow-x-auto">
+          <div className="flex min-w-max gap-2 border-b border-gray-300" role="tablist" aria-label="Filter works by category">
+            {categories.map((category) => (
+              <button
+                key={category.value}
+                type="button"
+                role="tab"
+                aria-selected={activeCategory === category.value}
+                onClick={() => setActiveCategory(category.value)}
+                className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeCategory === category.value
+                    ? 'border-blue-600 text-blue-700'
+                    : 'border-transparent text-gray-600 hover:border-gray-400 hover:text-gray-900'
+                }`}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {works.map((item) => (
+          {filteredWorks.map((item) => (
             <div key={item._id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-xl transition">
               <img
                 src={getImageUrl(item.image)}
@@ -195,6 +229,9 @@ function Work() {
             </div>
           ))}
         </div>
+        {filteredWorks.length === 0 && (
+          <p className="py-10 text-center text-gray-500">No works found in this category.</p>
+        )}
 
         {showModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
