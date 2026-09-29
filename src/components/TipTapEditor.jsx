@@ -8,18 +8,20 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { Video } from "./VideoExtension"; // ✅ Custom video extension
 
-const TipTapEditor = ({ value, onChange }) => {
+const TipTapEditor = ({ value, onChange, workOptions = [], openLinksOnClick = false }) => {
   const savedSelection = useRef(null);
+  const savedTextSelection = useRef(null);
   const [selectedColor, setSelectedColor] = useState("#000000");
+  const [selectedWorkSlug, setSelectedWorkSlug] = useState("");
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: false }),
       Image,
       Youtube,
       Video, // ✅ Added
       Link.configure({
-        openOnClick: false,
+        openOnClick: openLinksOnClick,
         autolink: true,
       }),
       TextStyle,
@@ -35,6 +37,13 @@ const TipTapEditor = ({ value, onChange }) => {
         onChange(html);
       } else {
         onChange("");
+      }
+    },
+
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      if (from < to) {
+        savedTextSelection.current = { from, to };
       }
     },
 
@@ -87,6 +96,18 @@ const TipTapEditor = ({ value, onChange }) => {
     if (url) {
       editor.chain().focus().setLink({ href: url }).run();
     }
+  };
+
+  const linkToSelectedWork = () => {
+    const selectedWork = workOptions.find((work) => work.slug === selectedWorkSlug);
+    if (!selectedWork || !savedTextSelection.current) return;
+
+    editor
+      .chain()
+      .focus()
+      .setTextSelection(savedTextSelection.current)
+      .setLink({ href: `/work/${selectedWork.slug}`, target: "_self" })
+      .run();
   };
 
   return (
@@ -221,6 +242,31 @@ const TipTapEditor = ({ value, onChange }) => {
         >
           🔗❌
         </ToolbarButton>
+
+        {workOptions.length > 0 && (
+          <>
+            <select
+              value={selectedWorkSlug}
+              onChange={(event) => setSelectedWorkSlug(event.target.value)}
+              aria-label="Choose a work to link"
+              className="max-w-52 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700"
+            >
+              <option value="">Choose work</option>
+              {workOptions.map((work) => (
+                <option key={work._id || work.slug} value={work.slug}>
+                  {work.buttonText || work.title || work.slug}
+                </option>
+              ))}
+            </select>
+            <ToolbarButton
+              onClick={linkToSelectedWork}
+              active={false}
+              label="Link selected text to this work"
+            >
+              Link to Work
+            </ToolbarButton>
+          </>
+        )}
 
         <Separator />
 
