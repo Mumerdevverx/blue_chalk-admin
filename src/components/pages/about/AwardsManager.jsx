@@ -12,7 +12,7 @@ const normalizeWorkLinks = (description = "") => {
   parsed.querySelectorAll("a[href]").forEach((link) => {
     try {
       const url = new URL(link.getAttribute("href"), window.location.origin);
-      if (url.origin === window.location.origin && url.pathname.startsWith("/work/")) {
+      if (url.pathname.startsWith("/work/")) {
         link.setAttribute("target", "_self");
       }
     } catch {
