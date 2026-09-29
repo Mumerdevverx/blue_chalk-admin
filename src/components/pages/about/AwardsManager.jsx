@@ -3,9 +3,29 @@ import API from "../../../api/axios";
 import ImagePicker from "../../ImagePicker";
 import TipTapEditor from "../../TipTapEditor";
 import getImageUrl from "../../../utils/imageUrl";
+import { workService } from "../../../services/workService";
+
+const normalizeWorkLinks = (description = "") => {
+  if (!description || typeof DOMParser === "undefined") return description;
+
+  const parsed = new DOMParser().parseFromString(description, "text/html");
+  parsed.querySelectorAll("a[href]").forEach((link) => {
+    try {
+      const url = new URL(link.getAttribute("href"), window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith("/work/")) {
+        link.setAttribute("target", "_self");
+      }
+    } catch {
+      // Leave invalid link URLs unchanged.
+    }
+  });
+
+  return parsed.body.innerHTML;
+};
 
 export default function AwardsManager() {
   const [awards, setAwards] = useState([]);
+  const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -24,7 +44,17 @@ export default function AwardsManager() {
   // =========================
   useEffect(() => {
     loadAwards();
+    loadWorks();
   }, []);
+
+  const loadWorks = async () => {
+    try {
+      const res = await workService.getAll();
+      setWorks((res.data || []).filter((work) => work.slug));
+    } catch (error) {
+      console.error("Error loading works for award links:", error);
+    }
+  };
 
   const loadAwards = async () => {
     try {
@@ -71,7 +101,7 @@ export default function AwardsManager() {
         category: award.category || "Awards",
         breadcrumb: award.breadcrumb || "Awards",
         image: award.image || "",
-        description: award.description || "",
+        description: normalizeWorkLinks(award.description || ""),
       });
     } else {
       // Add new
@@ -128,12 +158,17 @@ export default function AwardsManager() {
     }
 
     try {
+      const formData = {
+        ...form,
+        description: normalizeWorkLinks(form.description),
+      };
+
       if (editingId) {
         // UPDATE
-        await API.put(`/api/awards/${editingId}`, form);
+        await API.put(`/api/awards/${editingId}`, formData);
       } else {
         // CREATE
-        await API.post("/api/awards", form);
+        await API.post("/api/awards", formData);
       }
 
       handleCloseModal();
@@ -419,11 +454,12 @@ export default function AwardsManager() {
                 <TipTapEditor
                   value={form.description}
                   onChange={handleDescriptionChange}
+                  workOptions={works}
+                  openLinksOnClick
                 />
 
                 <p className="text-xs text-gray-500 mt-2">
-                  You can format text, add images, YouTube videos,
-                  and change the color of selected text.
+                  Select text, choose a Work, and click Link to Work to make it open that Work detail.
                 </p>
 
               </div>
