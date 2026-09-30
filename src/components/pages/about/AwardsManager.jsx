@@ -13,6 +13,7 @@ const normalizeWorkLinks = (description = "") => {
     try {
       const url = new URL(link.getAttribute("href"), window.location.origin);
       if (url.pathname.startsWith("/work/")) {
+        link.setAttribute("href", `${url.pathname}${url.search}${url.hash}`);
         link.setAttribute("target", "_self");
       }
     } catch {
