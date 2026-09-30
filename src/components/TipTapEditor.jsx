@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -55,6 +55,12 @@ const TipTapEditor = ({ value, onChange, workOptions = [], openLinksOnClick = fa
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value || "<p></p>", { emitUpdate: false });
+    }
+  }, [editor, value]);
 
   if (!editor) {
     return (
