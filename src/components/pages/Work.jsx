@@ -44,7 +44,12 @@ function Work() {
     setLoading(true);
     try {
       const res = await workService.getAll();
-      setWorks(res.data || []);
+      const items = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
+      setWorks(items);
     } catch (error) {
       console.error('Error loading works:', error);
       alert('Failed to load works');

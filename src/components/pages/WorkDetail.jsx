@@ -45,11 +45,29 @@ function WorkDetail() {
   useEffect(() => {
     const fetchWork = async () => {
       try {
-        const res = await workService.getBySlug(slug);
-        if (res.success) {
-          setWork(res.data);
+        let foundWork = null;
+
+        try {
+          const response = await workService.getBySlug(slug);
+          foundWork = response?.data || (response?.success === undefined ? response : null);
+        } catch {
+          // Try the work list when the slug endpoint is unavailable or has stale data.
+        }
+
+        if (!foundWork) {
+          const response = await workService.getAll();
+          const works = Array.isArray(response?.data)
+            ? response.data
+            : Array.isArray(response)
+              ? response
+              : [];
+          foundWork = works.find((item) => item.slug === slug) || null;
+        }
+
+        if (foundWork) {
+          setWork(foundWork);
         } else {
-          setError(res.message || 'Work not found');
+          setError('Work not found');
         }
         setLoading(false);
       } catch (err) {

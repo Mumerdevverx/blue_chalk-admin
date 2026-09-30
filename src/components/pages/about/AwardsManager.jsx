@@ -5,19 +5,136 @@ import TipTapEditor from "../../TipTapEditor";
 import getImageUrl from "../../../utils/imageUrl";
 import { workService } from "../../../services/workService";
 
-const normalizeWorkLinks = (description = "") => {
+const normalizeWorkLinks = (description = "", works = [], awards = []) => {
   if (!description || typeof DOMParser === "undefined") return description;
+
+  const normalizeText = (value = "") =>
+    value
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  const knownExternalLinks = new Map();
+  const knownExternalLabels = new Map();
+
+  awards.forEach((award) => {
+    const awardDocument = new DOMParser().parseFromString(
+      award.description || "",
+      "text/html"
+    );
+    awardDocument.querySelectorAll("a[href]").forEach((awardLink) => {
+      const text = normalizeText(awardLink.textContent);
+      if (!text || knownExternalLinks.has(text)) return;
+
+      try {
+        const url = new URL(awardLink.getAttribute("href"), window.location.origin);
+        if (url.origin !== window.location.origin && url.pathname.startsWith("/work/")) {
+          knownExternalLinks.set(text, url.href);
+          knownExternalLabels.set(text, awardLink.textContent.trim());
+        }
+      } catch {
+        // Ignore invalid URLs when building the legacy link map.
+      }
+    });
+  });
 
   const parsed = new DOMParser().parseFromString(description, "text/html");
   parsed.querySelectorAll("a[href]").forEach((link) => {
+    const linkText = normalizeText(link.textContent);
+    const selectedWork = works.find((work) => {
+      const title = normalizeText(work.title);
+      const buttonText = normalizeText(work.buttonText);
+      return linkText && (linkText === title || linkText === buttonText);
+    });
+
+    if (selectedWork?.slug) {
+      link.setAttribute("href", `/work/${selectedWork.slug}`);
+      link.setAttribute("target", "_self");
+      return;
+    }
+
+    const knownExternalLink = knownExternalLinks.get(linkText);
+    if (knownExternalLink) {
+      link.setAttribute("href", knownExternalLink);
+      link.setAttribute("target", "_self");
+      return;
+    }
+
     try {
       const url = new URL(link.getAttribute("href"), window.location.origin);
-      if (url.pathname.startsWith("/work/")) {
-        link.setAttribute("href", `${url.pathname}${url.search}${url.hash}`);
+      const workSlug = url.pathname.match(/^\/work\/([^/]+)\/?$/)?.[1];
+      const slugMatch = works.find((work) => work.slug === workSlug);
+
+      if (slugMatch?.slug) {
+        link.setAttribute("href", `/work/${slugMatch.slug}`);
         link.setAttribute("target", "_self");
       }
     } catch {
       // Leave invalid link URLs unchanged.
+    }
+  });
+
+  const linkCandidates = new Map();
+  works.forEach((work) => {
+    const label = (work.buttonText || work.title || "").trim();
+    const text = normalizeText(label);
+    if (work.slug && text.length >= 8 && !linkCandidates.has(text)) {
+      linkCandidates.set(text, { label, href: `/work/${work.slug}` });
+    }
+  });
+  knownExternalLinks.forEach((href, text) => {
+    if (!linkCandidates.has(text)) {
+      linkCandidates.set(text, { label: knownExternalLabels.get(text), href });
+    }
+  });
+
+  const candidates = [...linkCandidates.values()].sort(
+    (first, second) => second.label.length - first.label.length
+  );
+  const textWalker = parsed.createTreeWalker(parsed.body, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (textWalker.nextNode()) {
+    const textNode = textWalker.currentNode;
+    if (!textNode.parentElement.closest("a, script, style")) {
+      textNodes.push(textNode);
+    }
+  }
+
+  textNodes.forEach((textNode) => {
+    let remainingText = textNode.nodeValue;
+    const fragment = parsed.createDocumentFragment();
+    let changed = false;
+
+    while (remainingText) {
+      let match = null;
+      candidates.forEach((candidate) => {
+        const index = remainingText.toLowerCase().indexOf(candidate.label.toLowerCase());
+        if (
+          index >= 0 &&
+          (!match || index < match.index || (index === match.index && candidate.label.length > match.candidate.label.length))
+        ) {
+          match = { candidate, index };
+        }
+      });
+
+      if (!match) {
+        fragment.append(parsed.createTextNode(remainingText));
+        break;
+      }
+
+      changed = true;
+      fragment.append(parsed.createTextNode(remainingText.slice(0, match.index)));
+      const anchor = parsed.createElement("a");
+      anchor.setAttribute("href", match.candidate.href);
+      anchor.setAttribute("target", "_self");
+      anchor.textContent = match.candidate.label;
+      fragment.append(anchor);
+      remainingText = remainingText.slice(match.index + match.candidate.label.length);
+    }
+
+    if (changed) {
+      textNode.replaceWith(fragment);
     }
   });
 
@@ -51,7 +168,12 @@ export default function AwardsManager() {
   const loadWorks = async () => {
     try {
       const res = await workService.getAll();
-      setWorks((res.data || []).filter((work) => work.slug));
+      const items = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
+      setWorks(items.filter((work) => work.slug));
     } catch (error) {
       console.error("Error loading works for award links:", error);
     }
@@ -62,8 +184,12 @@ export default function AwardsManager() {
       setLoading(true);
 
       const res = await API.get("/api/awards");
-
-      setAwards(res.data.data || []);
+      const items = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+      setAwards(items);
     } catch (error) {
       console.error("Error loading awards:", error);
       alert("Failed to load awards");
@@ -102,7 +228,7 @@ export default function AwardsManager() {
         category: award.category || "Awards",
         breadcrumb: award.breadcrumb || "Awards",
         image: award.image || "",
-        description: normalizeWorkLinks(award.description || ""),
+        description: normalizeWorkLinks(award.description || "", works, awards),
       });
     } else {
       // Add new
@@ -161,7 +287,8 @@ export default function AwardsManager() {
     try {
       const formData = {
         ...form,
-        description: normalizeWorkLinks(form.description),
+        slug: awards.find((award) => award._id === editingId)?.slug,
+        description: normalizeWorkLinks(form.description, works, awards),
       };
 
       if (editingId) {
