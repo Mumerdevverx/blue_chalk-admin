@@ -15,33 +15,19 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       .replace(/\s+/g, " ")
       .trim()
       .toLowerCase();
-  const knownExternalLinks = new Map();
-  const knownExternalLabels = new Map();
-
-  awards.forEach((award) => {
-    const awardDocument = new DOMParser().parseFromString(
-      award.description || "",
-      "text/html"
-    );
-    awardDocument.querySelectorAll("a[href]").forEach((awardLink) => {
-      const text = normalizeText(awardLink.textContent);
-      if (!text || knownExternalLinks.has(text)) return;
-
-      try {
-        const url = new URL(awardLink.getAttribute("href"), window.location.origin);
-        if (url.origin !== window.location.origin && url.pathname.startsWith("/work/")) {
-          knownExternalLinks.set(text, url.href);
-          knownExternalLabels.set(text, awardLink.textContent.trim());
-        }
-      } catch {
-        // Ignore invalid URLs when building the legacy link map.
-      }
-    });
-  });
-
   const parsed = new DOMParser().parseFromString(description, "text/html");
   parsed.querySelectorAll("a[href]").forEach((link) => {
     const linkText = normalizeText(link.textContent);
+    try {
+      const url = new URL(link.getAttribute("href"), window.location.origin);
+      if (url.origin !== window.location.origin && url.pathname === "/") {
+        link.replaceWith(...link.childNodes);
+        return;
+      }
+    } catch {
+      // Leave invalid link URLs unchanged.
+    }
+
     const selectedWork = works.find((work) => {
       const title = normalizeText(work.title);
       const buttonText = normalizeText(work.buttonText);
@@ -54,13 +40,6 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       return;
     }
 
-    const knownExternalLink = knownExternalLinks.get(linkText);
-    if (knownExternalLink) {
-      link.setAttribute("href", knownExternalLink);
-      link.setAttribute("target", "_self");
-      return;
-    }
-
     try {
       const url = new URL(link.getAttribute("href"), window.location.origin);
       const workSlug = url.pathname.match(/^\/work\/([^/]+)\/?$/)?.[1];
@@ -69,6 +48,8 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       if (slugMatch?.slug) {
         link.setAttribute("href", `/work/${slugMatch.slug}`);
         link.setAttribute("target", "_self");
+      } else if (workSlug) {
+        link.remove();
       }
     } catch {
       // Leave invalid link URLs unchanged.
@@ -83,12 +64,6 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       linkCandidates.set(text, { label, href: `/work/${work.slug}` });
     }
   });
-  knownExternalLinks.forEach((href, text) => {
-    if (!linkCandidates.has(text)) {
-      linkCandidates.set(text, { label: knownExternalLabels.get(text), href });
-    }
-  });
-
   const candidates = [...linkCandidates.values()].sort(
     (first, second) => second.label.length - first.label.length
   );
