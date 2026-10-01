@@ -23,6 +23,9 @@ const TipTapEditor = ({ value, onChange, workOptions = [], openLinksOnClick = fa
       Link.configure({
         openOnClick: openLinksOnClick,
         autolink: true,
+        HTMLAttributes: {
+          style: "color: #2563eb;",
+        },
       }),
       TextStyle,
       Color,

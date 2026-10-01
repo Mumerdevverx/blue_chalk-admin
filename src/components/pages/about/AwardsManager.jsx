@@ -16,6 +16,38 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       .trim()
       .toLowerCase();
   const parsed = new DOMParser().parseFromString(description, "text/html");
+
+  const markdownTextWalker = parsed.createTreeWalker(parsed.body, NodeFilter.SHOW_TEXT);
+  const markdownTextNodes = [];
+  while (markdownTextWalker.nextNode()) {
+    const textNode = markdownTextWalker.currentNode;
+    if (!textNode.parentElement.closest("a, script, style")) {
+      markdownTextNodes.push(textNode);
+    }
+  }
+
+  markdownTextNodes.forEach((textNode) => {
+    const markdownLink = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const fragment = parsed.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = markdownLink.exec(textNode.nodeValue)) !== null) {
+      fragment.append(parsed.createTextNode(textNode.nodeValue.slice(lastIndex, match.index)));
+      const anchor = parsed.createElement("a");
+      anchor.setAttribute("href", match[2]);
+      anchor.setAttribute("style", "color: #2563eb;");
+      anchor.textContent = match[1];
+      fragment.append(anchor);
+      lastIndex = markdownLink.lastIndex;
+    }
+
+    if (lastIndex > 0) {
+      fragment.append(parsed.createTextNode(textNode.nodeValue.slice(lastIndex)));
+      textNode.replaceWith(fragment);
+    }
+  });
+
   parsed.querySelectorAll("a[href]").forEach((link) => {
     const linkText = normalizeText(link.textContent);
     try {
@@ -103,6 +135,7 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       const anchor = parsed.createElement("a");
       anchor.setAttribute("href", match.candidate.href);
       anchor.setAttribute("target", "_self");
+      anchor.setAttribute("style", "color: #2563eb;");
       anchor.textContent = match.candidate.label;
       fragment.append(anchor);
       remainingText = remainingText.slice(match.index + match.candidate.label.length);
@@ -122,6 +155,9 @@ export default function AwardsManager() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -193,6 +229,8 @@ export default function AwardsManager() {
   // OPEN MODAL
   // =========================
   const handleOpenModal = (award = null) => {
+    setSaveError("");
+
     if (award) {
       // Edit
       setEditingId(award._id);
@@ -259,6 +297,11 @@ export default function AwardsManager() {
       return;
     }
 
+    const isEditing = Boolean(editingId);
+    setIsSaving(true);
+    setSaveError("");
+    setSaveMessage("");
+
     try {
       const formData = {
         ...form,
@@ -276,13 +319,14 @@ export default function AwardsManager() {
 
       handleCloseModal();
       await loadAwards();
+      setSaveMessage(isEditing ? "Award updated successfully." : "Award saved successfully.");
     } catch (error) {
       console.error("Error saving award:", error);
-
-      alert(
-        error?.response?.data?.message ||
-          "Error saving award"
+      setSaveError(
+        error?.response?.data?.message || error?.message || "Unable to save award."
       );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -340,6 +384,7 @@ export default function AwardsManager() {
           <p className="text-sm text-gray-500 mt-1">
             Manage your awards and achievements.
           </p>
+          {saveMessage && <p role="status" className="mt-2 text-sm text-green-700">{saveMessage}</p>}
         </div>
 
         <button
@@ -561,6 +606,8 @@ export default function AwardsManager() {
                   openLinksOnClick
                 />
 
+                {saveError && <p role="alert" className="mt-2 text-sm text-red-600">{saveError}</p>}
+
                 <p className="text-xs text-gray-500 mt-2">
                   Select text, choose a Work, and click Link to Work to make it open that Work detail.
                 </p>
@@ -582,9 +629,10 @@ export default function AwardsManager() {
 
                 <button
                   type="submit"
+                  disabled={isSaving}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
                 >
-                  {editingId ? "Update Award" : "Save Award"}
+                  {isSaving ? "Saving..." : editingId ? "Update Award" : "Save Award"}
                 </button>
 
               </div>
