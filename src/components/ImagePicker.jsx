@@ -3,6 +3,34 @@ import { FiUpload, FiX } from 'react-icons/fi';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
 
+const compressImage = (file) => new Promise((resolve, reject) => {
+  const image = new Image();
+  const objectUrl = URL.createObjectURL(file);
+
+  image.onload = () => {
+    URL.revokeObjectURL(objectUrl);
+    const scale = Math.min(1, 1400 / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Image compression failed'));
+        return;
+      }
+      resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.75);
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    reject(new Error('Image could not be read'));
+  };
+
+  image.src = objectUrl;
+});
+
 const ImagePicker = ({ value, onChange, label = 'Choose Image' }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(getImageUrl(value));
@@ -19,10 +47,10 @@ const ImagePicker = ({ value, onChange, label = 'Choose Image' }) => {
     }
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('image', file);
-
     try {
+      const compressedFile = await compressImage(file);
+      const formData = new FormData();
+      formData.append('image', compressedFile);
       const response = await API.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
