@@ -3,8 +3,25 @@ import API from '../../../api/axios';
 import ImagePicker from '../../ImagePicker';
 import getImageUrl from '../../../utils/imageUrl';
 
+const defaultMembers = [
+  { _id: 'greg-moyer', name: 'Greg Moyer', pronouns: 'He/Him', position: 'Team Member', image: '', hoverImage: '', description: '', linkedin: '', twitter: '', email: '', order: 1 },
+  { _id: 'pam-huling', name: 'Pam Huling', pronouns: 'She/Her', position: 'Team Member', image: '', hoverImage: '', description: '', linkedin: '', twitter: '', email: '', order: 2 }
+];
+
+const sortMembers = (items = []) => {
+  const preferredOrder = { 'Greg Moyer': 1, 'Pam Huling': 2 };
+
+  return [...items].sort((a, b) => {
+    const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : (preferredOrder[a.name] ?? Number.MAX_SAFE_INTEGER);
+    const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : (preferredOrder[b.name] ?? Number.MAX_SAFE_INTEGER);
+
+    if (orderA !== orderB) return orderA - orderB;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+};
+
 export default function TeamManager() {
-  const [members, setMembers] = useState([]);
+  const [members, setMembers] = useState(defaultMembers);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -17,9 +34,15 @@ export default function TeamManager() {
   useEffect(() => { loadMembers(); }, []);
 
   const loadMembers = async () => {
-    const res = await API.get('/api/team');
-    setMembers(res.data.data || []);
-    setLoading(false);
+    try {
+      const res = await API.get('/api/team');
+      const teamMembers = Array.isArray(res.data?.data) && res.data.data.length > 0 ? res.data.data : defaultMembers;
+      setMembers(sortMembers(teamMembers));
+    } catch (error) {
+      setMembers(sortMembers(defaultMembers));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
