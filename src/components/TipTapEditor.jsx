@@ -6,6 +6,7 @@ import Youtube from "@tiptap/extension-youtube";
 import Link from "@tiptap/extension-link";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
+import Underline from "@tiptap/extension-underline";
 import { Video } from "./VideoExtension"; // ✅ Custom video extension
 
 const TipTapEditor = ({ value, onChange, workOptions = [], openLinksOnClick = false }) => {
@@ -24,11 +25,12 @@ const TipTapEditor = ({ value, onChange, workOptions = [], openLinksOnClick = fa
         openOnClick: openLinksOnClick,
         autolink: true,
         HTMLAttributes: {
-          style: "color: #2563eb;",
+          class: "editor-link",
         },
       }),
       TextStyle,
       Color,
+      Underline,
     ],
 
     content: value || "<p></p>",
@@ -148,6 +150,15 @@ const TipTapEditor = ({ value, onChange, workOptions = [], openLinksOnClick = fa
           label="Strike"
         >
           <s>S</s>
+        </ToolbarButton>
+
+        {/* Underline */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={editor.isActive("underline")}
+          label="Underline"
+        >
+          <u>U</u>
         </ToolbarButton>
 
         <Separator />
