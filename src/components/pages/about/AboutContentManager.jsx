@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../../api/axios';
+import TipTapEditor from '../../TipTapEditor';
 
 export default function AboutContentManager() {
   const [about, setAbout] = useState(null);
@@ -109,11 +110,17 @@ export default function AboutContentManager() {
           <div className="p-6 space-y-4">
             <div>
               <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">About Us (Left)</h3>
-              <p className="text-gray-800 whitespace-pre-wrap">{about.aboutUsText}</p>
+              <div
+                className="prose prose-sm max-w-none text-gray-800"
+                dangerouslySetInnerHTML={{ __html: about.aboutUsText || '' }}
+              />
             </div>
             <div className="border-t pt-4">
               <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">About Us (Right)</h3>
-              <p className="text-gray-800 whitespace-pre-wrap">{about.aboutUsRightText}</p>
+              <div
+                className="prose prose-sm max-w-none text-gray-800"
+                dangerouslySetInnerHTML={{ __html: about.aboutUsRightText || '' }}
+              />
             </div>
             <div className="border-t pt-4">
               <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">On Assignment Title</h3>
@@ -176,11 +183,17 @@ export default function AboutContentManager() {
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md border">
         <div>
           <label className="block text-sm font-medium whitespace-pre-wrap">About Us (Left) *</label>
-          <textarea name="aboutUsText" value={form.aboutUsText} onChange={handleChange} rows="4" className="w-full border rounded px-3 py-2" required />
+          <TipTapEditor
+            value={form.aboutUsText}
+            onChange={(value) => setForm((prev) => ({ ...prev, aboutUsText: value }))}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium whitespace-pre-wrap">About Us (Right) *</label>
-          <textarea name="aboutUsRightText" value={form.aboutUsRightText} onChange={handleChange} rows="4" className="w-full border rounded px-3 py-2" required />
+          <TipTapEditor
+            value={form.aboutUsRightText}
+            onChange={(value) => setForm((prev) => ({ ...prev, aboutUsRightText: value }))}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium">On Assignment Title</label>

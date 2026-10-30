@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+.editor-link {
+  color: #1893d2 !important;
+  text-decoration: none;
+}
+
+.editor-link:hover {
+  color: #0f6f9f !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose a {
+  color: #1893d2 !important;
+  text-decoration: none;
+}
+
+.prose a:hover {
+  color: #0f6f9f !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
