@@ -14,9 +14,17 @@ export default function ClientsManager() {
 
   const loadLogos = async () => {
     const res = await API.get('/api/clients');
-    setLogos(res.data.data || []);
+    const clients = res.data.data || [];
+    setLogos(clients);
     setLoading(false);
   };
+
+  const sortedLogos = [...logos].sort((a, b) => {
+    const orderA = Number.parseInt(String(a.order ?? '').trim(), 10);
+    const orderB = Number.parseInt(String(b.order ?? '').trim(), 10);
+    return (Number.isNaN(orderA) ? Number.MAX_SAFE_INTEGER : orderA)
+      - (Number.isNaN(orderB) ? Number.MAX_SAFE_INTEGER : orderB);
+  });
 
   const resetForm = () => {
     setForm({ imageUrl: '', name: '', order: 0 });
@@ -76,13 +84,13 @@ export default function ClientsManager() {
       </div>
 
       {/* Cards Grid – SAME AS GALLERY */}
-      {logos.length === 0 ? (
+      {sortedLogos.length === 0 ? (
         <div className="text-center text-gray-500 py-12 border-2 border-dashed rounded-lg">
           No logos added yet. Click "Add Logo" to upload.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {logos.map(logo => (
+          {sortedLogos.map(logo => (
             <div key={logo._id} className="bg-white rounded-lg shadow-md overflow-hidden border flex flex-col">
               <div className="h-40 flex items-center justify-center p-2 bg-gray-50">
                 <img
