@@ -36,15 +36,6 @@ export default function AboutContentManager() {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleArrayChange = (e) => {
-  const value = e.target.value;
-
-  setForm((prev) => ({
-    ...prev,
-    services: value.split(',').map((item) => item.trimStart()),
-  }));
-};
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -134,7 +125,7 @@ export default function AboutContentManager() {
               <h3 className="text-sm font-semibold text-gray-500 whitespace-pre-wrap">Services</h3>
               <div className="flex flex-wrap gap-2 mt-1">
                 {about.services.map((s, i) => (
-                  <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm">
+                  <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm whitespace-nowrap">
                     {s}
                   </span>
                 ))}
@@ -203,19 +194,22 @@ export default function AboutContentManager() {
           <label className="block text-sm font-medium">On Assignment Text *</label>
           <textarea name="onAssignmentText" value={form.onAssignmentText} onChange={handleChange} rows="2" className="w-full border rounded px-3 py-2" required />
         </div>
-     <textarea
-  value={form.services.join('\n')}
-  onChange={(e) =>
-    setForm((prev) => ({
-      ...prev,
-      services: e.target.value.split('\n'),
-    }))
-  }
-  rows={6}
-  className="w-full border rounded px-3 py-2"
-  placeholder="Enter each service on a new line"
-  required
-/>
+        <div>
+          <label className="block text-sm font-medium">Services *</label>
+          <textarea
+            value={form.services.join('\n')}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                services: e.target.value.split(/\r?\n/),
+              }))
+            }
+            rows={6}
+            className="w-full border rounded px-3 py-2"
+            placeholder="Enter each service on a new line"
+            required
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium">Careers Text *</label>
           <textarea name="careersText" value={form.careersText} onChange={handleChange} rows="4" className="w-full border rounded px-3 py-2" required />
