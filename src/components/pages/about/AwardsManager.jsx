@@ -194,6 +194,7 @@ export default function AwardsManager() {
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [readingAward, setReadingAward] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
@@ -501,6 +502,13 @@ export default function AwardsManager() {
               <div className="p-3 flex flex-col flex-1">
                 <h3 className="font-bold text-sm truncate">{award.title}</h3>
                 <p className="text-xs text-gray-500 mt-1">Order: {award.order ?? 0}</p>
+                <button
+                  type="button"
+                  onClick={() => setReadingAward(award)}
+                  className="mt-3 text-left text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Read More
+                </button>
 
                 {/* <p className="text-xs text-gray-600">
                   {award.year || "-"} - {award.category || "-"}
@@ -732,6 +740,33 @@ export default function AwardsManager() {
 
         </div>
 
+      )}
+
+      {readingAward && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {readingAward.title}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setReadingAward(null)}
+                className="text-gray-500 hover:text-gray-800 text-xl"
+                aria-label="Close description"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              className="prose prose-sm sm:prose-base max-w-none p-6"
+              dangerouslySetInnerHTML={{
+                __html: readingAward.description || "<p>No description available.</p>",
+              }}
+            />
+          </div>
+        </div>
       )}
 
     </div>
