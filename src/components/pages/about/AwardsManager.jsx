@@ -149,6 +149,46 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
   return parsed.body.innerHTML;
 };
 
+const AWARD_ORDER_STORAGE_KEY = "blue-chalk-award-orders";
+const isValidOrder = (value) =>
+  value !== null &&
+  value !== undefined &&
+  value !== "" &&
+  Number.isFinite(Number(value));
+
+const getStoredAwardOrders = () => {
+  try {
+    return JSON.parse(localStorage.getItem(AWARD_ORDER_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const applyAwardOrders = (items) => {
+  const storedOrders = getStoredAwardOrders();
+
+  return items.map((award, index) => ({
+    ...award,
+    order: isValidOrder(storedOrders[award._id])
+      ? Number(storedOrders[award._id])
+      : isValidOrder(award.order)
+        ? Number(award.order)
+        : index + 1,
+  }));
+};
+
+const storeAwardOrder = (id, order) => {
+  const orders = getStoredAwardOrders();
+  orders[id] = order;
+  localStorage.setItem(AWARD_ORDER_STORAGE_KEY, JSON.stringify(orders));
+};
+
+const removeStoredAwardOrder = (id) => {
+  const orders = getStoredAwardOrders();
+  delete orders[id];
+  localStorage.setItem(AWARD_ORDER_STORAGE_KEY, JSON.stringify(orders));
+};
+
 export default function AwardsManager() {
   const [awards, setAwards] = useState([]);
   const [works, setWorks] = useState([]);
@@ -161,6 +201,7 @@ export default function AwardsManager() {
 
   const [form, setForm] = useState({
     title: "",
+    order: "0",
     year: String(new Date().getFullYear()),
     category: "Awards",
     breadcrumb: "Awards",
@@ -200,7 +241,7 @@ export default function AwardsManager() {
         : Array.isArray(res.data?.data)
           ? res.data.data
           : [];
-      setAwards(items);
+      setAwards(applyAwardOrders(items));
     } catch (error) {
       console.error("Error loading awards:", error);
       alert("Failed to load awards");
@@ -215,6 +256,12 @@ export default function AwardsManager() {
   const resetForm = () => {
     setForm({
       title: "",
+      order: String(
+        awards.reduce((highestOrder, award) => {
+          const order = Number(award.order);
+          return Number.isFinite(order) ? Math.max(highestOrder, order) : highestOrder;
+        }, -1) + 1
+      ),
       year: String(new Date().getFullYear()),
       category: "Awards",
       breadcrumb: "Awards",
@@ -237,6 +284,7 @@ export default function AwardsManager() {
 
       setForm({
         title: award.title || "",
+        order: String(isValidOrder(award.order) ? award.order : 0),
         year: award.year || String(new Date().getFullYear()),
         category: award.category || "Awards",
         breadcrumb: award.breadcrumb || "Awards",
@@ -305,6 +353,7 @@ export default function AwardsManager() {
     try {
       const formData = {
         ...form,
+        order: Number(form.order) || 0,
         slug: awards.find((award) => award._id === editingId)?.slug,
         description: normalizeWorkLinks(form.description, works, awards),
       };
@@ -312,13 +361,26 @@ export default function AwardsManager() {
       if (editingId) {
         // UPDATE
         await API.put(`/api/awards/${editingId}`, formData);
+        storeAwardOrder(editingId, formData.order);
+        setAwards((currentAwards) =>
+          currentAwards.map((award) =>
+            award._id === editingId ? { ...award, ...formData } : award
+          )
+        );
       } else {
         // CREATE
-        await API.post("/api/awards", formData);
+        const response = await API.post("/api/awards", formData);
+        const createdAward = response.data?.data;
+        if (createdAward?._id) {
+          storeAwardOrder(createdAward._id, formData.order);
+          setAwards((currentAwards) => [
+            ...currentAwards,
+            { ...createdAward, ...formData },
+          ]);
+        }
       }
 
       handleCloseModal();
-      await loadAwards();
       setSaveMessage(isEditing ? "Award updated successfully." : "Award saved successfully.");
     } catch (error) {
       console.error("Error saving award:", error);
@@ -343,6 +405,7 @@ export default function AwardsManager() {
     try {
       await API.delete(`/api/awards/${id}`);
 
+      removeStoredAwardOrder(id);
       await loadAwards();
     } catch (error) {
       console.error("Error deleting award:", error);
@@ -407,10 +470,14 @@ export default function AwardsManager() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[...awards]
             .sort((first, second) => {
-              const firstOrder = Number(first.order);
-              const secondOrder = Number(second.order);
+              const firstOrder = isValidOrder(first.order)
+                ? Number(first.order)
+                : 0;
+              const secondOrder = isValidOrder(second.order)
+                ? Number(second.order)
+                : 0;
 
-              if (Number.isFinite(firstOrder) && Number.isFinite(secondOrder)) {
+              if (firstOrder !== secondOrder) {
                 return firstOrder - secondOrder;
               }
 
@@ -433,6 +500,7 @@ export default function AwardsManager() {
 
               <div className="p-3 flex flex-col flex-1">
                 <h3 className="font-bold text-sm truncate">{award.title}</h3>
+                <p className="text-xs text-gray-500 mt-1">Order: {award.order ?? 0}</p>
 
                 {/* <p className="text-xs text-gray-600">
                   {award.year || "-"} - {award.category || "-"}
@@ -514,6 +582,27 @@ export default function AwardsManager() {
                   required
                 />
 
+              </div>
+
+              {/* Order */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Order
+                </label>
+
+                <input
+                  type="number"
+                  name="order"
+                  value={form.order}
+                  onChange={handleChange}
+                  min="0"
+                  step="1"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Awards are displayed from the lowest order number to the highest.
+                </p>
               </div>
 
               {/* Year */}
