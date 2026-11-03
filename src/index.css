@@ -36,3 +36,11 @@
   text-decoration: underline !important;
   text-underline-offset: 2px;
 }
+
+.news-content p {
+  margin-block: 0 1.25rem;
+}
+
+.news-content p:last-child {
+  margin-bottom: 0;
+}
