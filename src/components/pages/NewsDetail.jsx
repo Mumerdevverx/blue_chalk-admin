@@ -64,7 +64,7 @@ function NewsDetail() {
         <p className="text-gray-500 text-lg">{error || 'News not found'}</p>
         <button
           onClick={() => navigate('/news')}
-          className="text-[#1893DB] hover:underline mt-4"
+          className="text-[#1893d2] hover:underline mt-4"
         >
           ← Back to all News
         </button>
@@ -79,7 +79,7 @@ function NewsDetail() {
         <div className="p-6 border-b">
           <button
             onClick={() => navigate('/news')}
-            className="flex items-center gap-2 text-[#1893DB] hover:underline"
+            className="flex items-center gap-2 text-[#1893d2] hover:underline"
           >
             <FiArrowLeft /> Back to all News
           </button>
@@ -134,7 +134,7 @@ function NewsDetail() {
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Full Content</h3>
             {news.content ? (
               <div
-                className="text-gray-800 text-base leading-relaxed prose max-w-none"
+                className="news-content text-gray-800 text-base leading-relaxed prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: news.content }}
               />
             ) : (
