@@ -24,7 +24,7 @@ function Work() {
     overlayType: ''
   });
   const categories = [
-    { label: 'All', value: 'All' },
+    { label: 'All Projects', value: 'All' },
     { label: 'Featured', value: 'Featured' },
     { label: 'Brand', value: 'Branded' },
     { label: 'Entertainment', value: 'Entertainment' },
@@ -33,7 +33,7 @@ function Work() {
     { label: 'Award', value: 'Award' }
   ];
   const filteredWorks = activeCategory === 'All'
-    ? works
+    ? works.filter((item) => item.category !== 'Award')
     : works.filter((item) => item.category === activeCategory);
 
   useEffect(() => {
@@ -49,7 +49,12 @@ function Work() {
         : Array.isArray(res)
           ? res
           : [];
-      setWorks(items);
+      setWorks(items.map((item) => ({
+        ...item,
+        category: item.category?.trim().toLowerCase() === 'awards'
+          ? 'Award'
+          : item.category
+      })));
     } catch (error) {
       console.error('Error loading works:', error);
       alert('Failed to load works');
