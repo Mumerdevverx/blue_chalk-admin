@@ -17,8 +17,30 @@
 }
 
 .prose a:hover {
-  color: #0f6f9f !important;
+  color: #1893d2 !important;
   text-decoration: underline !important;
   text-underline-offset: 2px;
   cursor: pointer;
+}
+
+.news-content a,
+.news-content a:visited,
+.news-content a:hover,
+.news-content a:focus,
+.news-content a:active {
+  color: #1893d2 !important;
+}
+
+.news-content a:hover,
+.news-content a:focus {
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+.news-content p {
+  margin-block: 0 1.25rem;
+}
+
+.news-content p:last-child {
+  margin-bottom: 0;
 }
