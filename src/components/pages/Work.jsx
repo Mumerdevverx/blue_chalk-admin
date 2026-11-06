@@ -7,6 +7,7 @@ import TipTapEditor from '../../components/TipTapEditor';
 import getImageUrl from '../../utils/imageUrl';
 
 function Work() {
+  const getWorkOrder = (work) => work.order ?? work.sortOrder ?? work.orderNumber ?? '';
   const navigate = useNavigate();
   const [works, setWorks] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -21,7 +22,8 @@ function Work() {
     award: '',
     aboutContent: '',
     showOverlay: false,
-    overlayType: ''
+    overlayType: '',
+    order: ''
   });
   const categories = [
     { label: 'All Projects', value: 'All' },
@@ -32,9 +34,20 @@ function Work() {
     { label: 'Documentary', value: 'Documentary' },
     { label: 'Award', value: 'Award' }
   ];
+  const sortedWorks = [...works].sort((a, b) => {
+    const orderA = Number(a.order);
+    const orderB = Number(b.order);
+    const hasOrderA = Number.isFinite(orderA) && orderA > 0;
+    const hasOrderB = Number.isFinite(orderB) && orderB > 0;
+
+    if (hasOrderA && hasOrderB) return orderA - orderB;
+    if (hasOrderA) return -1;
+    if (hasOrderB) return 1;
+    return 0;
+  });
   const filteredWorks = activeCategory === 'All'
-    ? works.filter((item) => item.category !== 'Award')
-    : works.filter((item) => item.category === activeCategory);
+    ? sortedWorks.filter((item) => item.category !== 'Award')
+    : sortedWorks.filter((item) => item.category === activeCategory);
 
   useEffect(() => {
     loadWorks();
@@ -51,6 +64,7 @@ function Work() {
           : [];
       setWorks(items.map((item) => ({
         ...item,
+        order: getWorkOrder(item),
         category: item.category?.trim().toLowerCase() === 'awards'
           ? 'Award'
           : item.category
@@ -78,20 +92,33 @@ function Work() {
     e.preventDefault();
     if (!formData.image.trim()) return alert('Image is required');
     if (!formData.aboutContent.trim()) return alert('About Content is required');
+    const order = Number(formData.order);
+    if (!Number.isInteger(order) || order < 1) return alert('Order must be a whole number greater than 0');
 
     setIsSaving(true);
     try {
+      const payload = { ...formData, order };
+      let savedWork;
       if (editingWork) {
-        await workService.update(editingWork._id, formData);
+        const response = await workService.update(editingWork._id, payload);
+        savedWork = response?.data || response;
         alert('✅ Work updated successfully!');
       } else {
-        await workService.create(formData);
+        const response = await workService.create(payload);
+        savedWork = response?.data || response;
         alert('✅ Work created successfully!');
+      }
+      if (editingWork) {
+        setWorks((currentWorks) => currentWorks.map((work) =>
+          work._id === editingWork._id ? { ...work, ...savedWork, order } : work
+        ));
+      } else if (savedWork?._id) {
+        setWorks((currentWorks) => [...currentWorks, { ...savedWork, order }]);
       }
       setShowModal(false);
       setEditingWork(null);
       resetForm();
-      loadWorks();
+      if (!editingWork) await loadWorks();
     } catch (error) {
       console.error('Error saving work:', error);
       alert('Failed to save work');
@@ -119,7 +146,8 @@ function Work() {
       award: '',
       aboutContent: '',
       showOverlay: false,
-      overlayType: ''
+      overlayType: '',
+      order: ''
     });
     setEditingWork(null);
   };
@@ -133,7 +161,8 @@ function Work() {
       award: work.award || '',
       aboutContent: work.aboutContent || '',
       showOverlay: work.showOverlay || false,
-      overlayType: work.overlayType || ''
+      overlayType: work.overlayType || '',
+      order: getWorkOrder(work)
     });
     setShowModal(true);
   };
@@ -191,7 +220,7 @@ function Work() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredWorks.map((item) => (
+          {filteredWorks.map((item, index) => (
             <div key={item._id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-xl transition">
               <img
                 src={getImageUrl(item.image)}
@@ -200,6 +229,7 @@ function Work() {
                 onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=No+Image'; }}
               />
               <div className="p-4">
+                <p className="text-sm font-bold text-blue-600">Order: {item.order || index + 1}</p>
                 {/* ✅ Category */}
                 <p className="text-sm font-semibold text-gray-700">Category: {item.category}</p>
                 {/* ✅ Title Button */}
@@ -280,6 +310,21 @@ function Work() {
                     value={formData.buttonText}
                     onChange={handleChange}
                     placeholder="Watch Now"
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Order *</label>
+                  <input
+                    type="number"
+                    name="order"
+                    min="1"
+                    step="1"
+                    required
+                    value={formData.order}
+                    onChange={handleChange}
+                    placeholder="e.g. 1"
                     className="w-full p-2 border rounded"
                   />
                 </div>

@@ -5,6 +5,7 @@ import { workService } from '../../services/workService'
 import getImageUrl from '../../utils/imageUrl'
 
 export default function HomePage() {
+  const getWorkOrder = (work) => work.order ?? work.sortOrder ?? work.orderNumber ?? ''
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,6 +22,17 @@ export default function HomePage() {
   const [selectedWorkSlug, setSelectedWorkSlug] = useState('')
   const [imagePage, setImagePage] = useState(1)
   const imagesPerPage = 6
+  const sortedWorks = [...works].sort((a, b) => {
+    const orderA = Number(getWorkOrder(a))
+    const orderB = Number(getWorkOrder(b))
+    const hasOrderA = Number.isFinite(orderA) && orderA > 0
+    const hasOrderB = Number.isFinite(orderB) && orderB > 0
+
+    if (hasOrderA && hasOrderB) return orderA - orderB
+    if (hasOrderA) return -1
+    if (hasOrderB) return 1
+    return 0
+  })
 
   // ==========================================
   // LOAD HOME ITEMS
@@ -858,13 +870,13 @@ export default function HomePage() {
                       Select Work Project
                     </option>
 
-                    {works.map((work) => (
+                    {sortedWorks.map((work) => (
 
                       <option
                         key={work._id}
                         value={work.slug}
                       >
-                        {getWorkOptionLabel(work)}
+                        {getWorkOrder(work) || '—'}. {getWorkOptionLabel(work)}
                       </option>
 
                     ))}
