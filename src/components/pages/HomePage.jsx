@@ -4,8 +4,19 @@ import homeService from '../../services/homeService'
 import { workService } from '../../services/workService'
 import getImageUrl from '../../utils/imageUrl'
 
+const WORK_ORDER_STORAGE_KEY = 'blue-chalk-work-orders'
+
 export default function HomePage() {
   const getWorkOrder = (work) => work.order ?? work.sortOrder ?? work.orderNumber ?? ''
+  const getStoredWorkOrders = () => {
+    try {
+      const storedOrders = JSON.parse(localStorage.getItem(WORK_ORDER_STORAGE_KEY) || '{}')
+      return storedOrders && typeof storedOrders === 'object' ? storedOrders : {}
+    } catch (error) {
+      console.error('Error reading saved work orders:', error)
+      return {}
+    }
+  }
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -65,7 +76,11 @@ export default function HomePage() {
       console.log('📦 Loaded works:', res)
 
       if (res.success) {
-        setWorks(res.data || [])
+        const storedOrders = getStoredWorkOrders()
+        setWorks((res.data || []).map((work) => ({
+          ...work,
+          order: storedOrders[work._id] ?? getWorkOrder(work)
+        })))
       }
     } catch (error) {
       console.error('Error loading works:', error)
