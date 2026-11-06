@@ -6,8 +6,19 @@ import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
 import getImageUrl from '../../utils/imageUrl';
 
+const WORK_ORDER_STORAGE_KEY = 'blue-chalk-work-orders';
+
 function Work() {
   const getWorkOrder = (work) => work.order ?? work.sortOrder ?? work.orderNumber ?? '';
+  const getStoredWorkOrders = () => {
+    try {
+      const storedOrders = JSON.parse(localStorage.getItem(WORK_ORDER_STORAGE_KEY) || '{}');
+      return storedOrders && typeof storedOrders === 'object' ? storedOrders : {};
+    } catch (error) {
+      console.error('Error reading saved work orders:', error);
+      return {};
+    }
+  };
   const navigate = useNavigate();
   const [works, setWorks] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -62,9 +73,10 @@ function Work() {
         : Array.isArray(res)
           ? res
           : [];
+      const storedOrders = getStoredWorkOrders();
       setWorks(items.map((item) => ({
         ...item,
-        order: getWorkOrder(item),
+        order: storedOrders[item._id] ?? getWorkOrder(item),
         category: item.category?.trim().toLowerCase() === 'awards'
           ? 'Award'
           : item.category
@@ -109,10 +121,16 @@ function Work() {
         alert('✅ Work created successfully!');
       }
       if (editingWork) {
+        const storedOrders = getStoredWorkOrders();
+        storedOrders[editingWork._id] = order;
+        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(storedOrders));
         setWorks((currentWorks) => currentWorks.map((work) =>
           work._id === editingWork._id ? { ...work, ...savedWork, order } : work
         ));
       } else if (savedWork?._id) {
+        const storedOrders = getStoredWorkOrders();
+        storedOrders[savedWork._id] = order;
+        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(storedOrders));
         setWorks((currentWorks) => [...currentWorks, { ...savedWork, order }]);
       }
       setShowModal(false);
@@ -131,6 +149,9 @@ function Work() {
     if (!window.confirm('Delete this work?')) return;
     try {
       await workService.delete(id);
+      const storedOrders = getStoredWorkOrders();
+      delete storedOrders[id];
+      localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(storedOrders));
       alert('✅ Deleted');
       loadWorks();
     } catch (error) {
