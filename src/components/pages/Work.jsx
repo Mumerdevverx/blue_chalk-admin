@@ -5,22 +5,17 @@ import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
 import getImageUrl from '../../utils/imageUrl';
-
-const WORK_ORDER_STORAGE_KEY = 'blue-chalk-work-orders';
+import {
+  getStoredWorkOrders,
+  getWorkOrder,
+  getWorkOrderForCategory,
+  WORK_ORDER_STORAGE_KEY
+} from '../../utils/workOrder';
 
 function Work() {
-  const getWorkOrder = (work) => work.order ?? work.sortOrder ?? work.orderNumber ?? '';
-  const getStoredWorkOrders = () => {
-    try {
-      const storedOrders = JSON.parse(localStorage.getItem(WORK_ORDER_STORAGE_KEY) || '{}');
-      return storedOrders && typeof storedOrders === 'object' ? storedOrders : {};
-    } catch (error) {
-      console.error('Error reading saved work orders:', error);
-      return {};
-    }
-  };
   const navigate = useNavigate();
   const [works, setWorks] = useState([]);
+  const [storedOrders, setStoredOrders] = useState(getStoredWorkOrders);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -46,8 +41,8 @@ function Work() {
     { label: 'Award', value: 'Award' }
   ];
   const sortedWorks = [...works].sort((a, b) => {
-    const orderA = Number(a.order);
-    const orderB = Number(b.order);
+    const orderA = Number(getWorkOrderForCategory(a, activeCategory, storedOrders));
+    const orderB = Number(getWorkOrderForCategory(b, activeCategory, storedOrders));
     const hasOrderA = Number.isFinite(orderA) && orderA > 0;
     const hasOrderB = Number.isFinite(orderB) && orderB > 0;
 
@@ -73,10 +68,10 @@ function Work() {
         : Array.isArray(res)
           ? res
           : [];
-      const storedOrders = getStoredWorkOrders();
+      const savedOrders = getStoredWorkOrders();
+      setStoredOrders(savedOrders);
       setWorks(items.map((item) => ({
         ...item,
-        order: storedOrders[item._id] ?? getWorkOrder(item),
         category: item.category?.trim().toLowerCase() === 'awards'
           ? 'Award'
           : item.category
@@ -109,7 +104,9 @@ function Work() {
 
     setIsSaving(true);
     try {
-      const payload = { ...formData, order };
+      const payload = Object.fromEntries(
+        Object.entries(formData).filter(([key]) => key !== 'order')
+      );
       let savedWork;
       if (editingWork) {
         const response = await workService.update(editingWork._id, payload);
@@ -121,17 +118,29 @@ function Work() {
         alert('✅ Work created successfully!');
       }
       if (editingWork) {
-        const storedOrders = getStoredWorkOrders();
-        storedOrders[editingWork._id] = order;
-        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(storedOrders));
+        const updatedOrders = {
+          ...storedOrders,
+          [activeCategory]: {
+            ...storedOrders[activeCategory],
+            [editingWork._id]: order
+          }
+        };
+        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
+        setStoredOrders(updatedOrders);
         setWorks((currentWorks) => currentWorks.map((work) =>
-          work._id === editingWork._id ? { ...work, ...savedWork, order } : work
+          work._id === editingWork._id ? { ...work, ...savedWork } : work
         ));
       } else if (savedWork?._id) {
-        const storedOrders = getStoredWorkOrders();
-        storedOrders[savedWork._id] = order;
-        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(storedOrders));
-        setWorks((currentWorks) => [...currentWorks, { ...savedWork, order }]);
+        const updatedOrders = {
+          ...storedOrders,
+          [activeCategory]: {
+            ...storedOrders[activeCategory],
+            [savedWork._id]: order
+          }
+        };
+        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
+        setStoredOrders(updatedOrders);
+        setWorks((currentWorks) => [...currentWorks, savedWork]);
       }
       setShowModal(false);
       setEditingWork(null);
@@ -149,9 +158,15 @@ function Work() {
     if (!window.confirm('Delete this work?')) return;
     try {
       await workService.delete(id);
-      const storedOrders = getStoredWorkOrders();
-      delete storedOrders[id];
-      localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(storedOrders));
+      const updatedOrders = Object.fromEntries(
+        Object.entries(getStoredWorkOrders()).map(([category, orders]) => {
+          const categoryOrders = { ...orders };
+          delete categoryOrders[id];
+          return [category, categoryOrders];
+        })
+      );
+      localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
+      setStoredOrders(updatedOrders);
       alert('✅ Deleted');
       loadWorks();
     } catch (error) {
@@ -159,9 +174,9 @@ function Work() {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = (category = 'All Projects') => {
     setFormData({
-      category: 'All Projects',
+      category,
       image: '',
       buttonText: 'Watch Now',
       award: '',
@@ -183,7 +198,7 @@ function Work() {
       aboutContent: work.aboutContent || '',
       showOverlay: work.showOverlay || false,
       overlayType: work.overlayType || '',
-      order: getWorkOrder(work)
+      order: getWorkOrderForCategory(work, activeCategory, storedOrders)
     });
     setShowModal(true);
   };
@@ -213,7 +228,7 @@ function Work() {
             <button onClick={loadWorks} className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
               <FiRefreshCw /> Refresh
             </button>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <button onClick={() => { resetForm(activeCategory === 'All' ? 'All Projects' : activeCategory); setShowModal(true); }} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
               <FiPlus /> Add Work
             </button>
           </div>
@@ -250,7 +265,9 @@ function Work() {
                 onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=No+Image'; }}
               />
               <div className="p-4">
-                <p className="text-sm font-bold text-blue-600">Order: {item.order || index + 1}</p>
+                <p className="text-sm font-bold text-blue-600">
+                  Order: {getWorkOrderForCategory(item, activeCategory, storedOrders) || index + 1}
+                </p>
                 {/* ✅ Category */}
                 <p className="text-sm font-semibold text-gray-700">Category: {item.category}</p>
                 {/* ✅ Title Button */}
