@@ -66,7 +66,9 @@ function Work() {
     return 0;
   });
   const filteredWorks = activeCategory === 'All'
-    ? sortedWorks.filter((item) => item.category !== 'Award')
+    ? sortedWorks.filter((item) => (
+      item.category !== 'Award' && storedOrders.AllProjects?.includes(item._id)
+    ))
     : sortedWorks.filter((item) => item.category === activeCategory);
   const allOrderCategories = categories.filter(
     (category) => category.value !== 'All' && category.value !== 'Award'
@@ -98,14 +100,24 @@ function Work() {
         : Array.isArray(res)
           ? res
           : [];
-      const savedOrders = getStoredWorkOrders();
-      setStoredOrders(savedOrders);
-      setWorks(items.map((item) => ({
+      let savedOrders = getStoredWorkOrders();
+      const normalizedItems = items.map((item) => ({
         ...item,
         category: item.category?.trim().toLowerCase() === 'awards'
           ? 'Award'
           : item.category
-      })));
+      }));
+      if (!Array.isArray(savedOrders.AllProjects)) {
+        savedOrders = {
+          ...savedOrders,
+          AllProjects: normalizedItems
+            .filter((item) => item.category !== 'Award')
+            .map((item) => item._id)
+        };
+        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(savedOrders));
+      }
+      setStoredOrders(savedOrders);
+      setWorks(normalizedItems);
     } catch (error) {
       console.error('Error loading works:', error);
       alert('Failed to load works');
@@ -161,13 +173,19 @@ function Work() {
           work._id === editingWork._id ? { ...work, ...savedWork } : work
         ));
       } else if (savedWork?._id) {
-        const updatedOrders = {
+        let updatedOrders = {
           ...storedOrders,
           [activeCategory]: {
             ...storedOrders[activeCategory],
             [savedWork._id]: order
           }
         };
+        if (formData.category === 'All Projects') {
+          updatedOrders = {
+            ...updatedOrders,
+            AllProjects: [...new Set([...(storedOrders.AllProjects || []), savedWork._id])]
+          };
+        }
         localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
         setStoredOrders(updatedOrders);
         setWorks((currentWorks) => [...currentWorks, savedWork]);
@@ -184,14 +202,36 @@ function Work() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this work?')) return;
+  const handleDelete = async (work) => {
+    if (activeCategory === 'All') {
+      if (!window.confirm('Remove this project from All Projects? It will remain in its category.')) return;
+      try {
+        const currentOrders = getStoredWorkOrders();
+        const updatedOrders = {
+          ...currentOrders,
+          AllProjects: (currentOrders.AllProjects || []).filter((id) => id !== work._id),
+          All: { ...currentOrders.All }
+        };
+        delete updatedOrders.All[work._id];
+        localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
+        setStoredOrders(updatedOrders);
+      } catch (error) {
+        console.error('Error removing work from All Projects:', error);
+        alert('Failed to remove project from All Projects');
+      }
+      return;
+    }
+
+    if (!window.confirm('Delete this work? It will be removed from all categories.')) return;
     try {
-      await workService.delete(id);
+      await workService.delete(work._id);
       const updatedOrders = Object.fromEntries(
         Object.entries(getStoredWorkOrders()).map(([category, orders]) => {
+          if (Array.isArray(orders)) {
+            return [category, orders.filter((id) => id !== work._id)];
+          }
           const categoryOrders = { ...orders };
-          delete categoryOrders[id];
+          delete categoryOrders[work._id];
           return [category, categoryOrders];
         })
       );
@@ -248,9 +288,17 @@ function Work() {
   };
 
   const handleSaveAllProjectOrders = () => {
+    const validOrders = Object.fromEntries(
+      Object.entries(allProjectOrderDraft)
+        .filter(([, value]) => Number.isInteger(Number(value)) && Number(value) > 0)
+        .map(([id, value]) => [id, Number(value)])
+    );
+    const allProjectIds = new Set(storedOrders.AllProjects || []);
+    Object.keys(validOrders).forEach((id) => allProjectIds.add(id));
     const updatedOrders = {
       ...storedOrders,
-      All: allProjectOrderDraft
+      All: validOrders,
+      AllProjects: [...allProjectIds]
     };
 
     try {
@@ -370,10 +418,10 @@ function Work() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(item._id)}
+                      onClick={() => handleDelete(item)}
                       className="text-red-600 hover:text-red-800 text-sm"
                     >
-                      Delete
+                      {activeCategory === 'All' ? 'Remove from All' : 'Delete'}
                     </button>
                   </div>
                   <button
