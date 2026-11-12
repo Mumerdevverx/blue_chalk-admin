@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { workService } from '../../services/workService';
 import getImageUrl from '../../utils/imageUrl';
+import { getWorkAboutContent } from '../../utils/workAboutContent';
 
 const getYouTubeVideoId = (value) => {
   try {
@@ -146,6 +147,8 @@ function WorkDetail() {
     );
   }
 
+  const aboutContent = getWorkAboutContent(work.aboutContent);
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
@@ -163,16 +166,46 @@ function WorkDetail() {
           </div>
         </div>
 
-        {/* ✅ Render the saved HTML content (includes video) */}
         <div className="p-6">
-          {work.aboutContent ? (
+          {aboutContent.content && (
             <div
               className="text-gray-800 text-base leading-relaxed prose max-w-none"
               dangerouslySetInnerHTML={{
-                __html: normalizeVideoPreviews(work.aboutContent, getImageUrl(work.image))
+                __html: normalizeVideoPreviews(aboutContent.content, getImageUrl(work.image))
               }}
             />
-          ) : (
+          )}
+          {aboutContent.left || aboutContent.right ? (
+            <div className="mt-8 grid gap-8 md:grid-cols-2">
+              <section>
+                <h2 className="mb-3 text-xl font-semibold text-gray-900">About Us (Left)</h2>
+                {aboutContent.legacyColumns ? (
+                  <div
+                    className="text-gray-800 text-base leading-relaxed prose max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: normalizeVideoPreviews(aboutContent.left, getImageUrl(work.image))
+                    }}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap text-gray-800">{aboutContent.left}</p>
+                )}
+              </section>
+              <section>
+                <h2 className="mb-3 text-xl font-semibold text-gray-900">About Us (Right)</h2>
+                {aboutContent.legacyColumns ? (
+                  <div
+                    className="text-gray-800 text-base leading-relaxed prose max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: normalizeVideoPreviews(aboutContent.right, getImageUrl(work.image))
+                    }}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap text-gray-800">{aboutContent.right}</p>
+                )}
+              </section>
+            </div>
+          ) : null}
+          {!aboutContent.content && !aboutContent.left && !aboutContent.right && (
             <p className="text-gray-500">No content provided.</p>
           )}
         </div>
