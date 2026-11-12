@@ -6,6 +6,7 @@ import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
 import getImageUrl from '../../utils/imageUrl';
 import { createWorkAboutContent, getWorkAboutContent } from '../../utils/workAboutContent';
+import { getWorkNameSlug } from '../../utils/workSlug';
 import {
   getStoredWorkOrders,
   getWorkOrder,
@@ -297,7 +298,8 @@ function Work() {
     setShowModal(true);
   };
 
-  const handleReadMore = (slug) => {
+  const handleReadMore = (work) => {
+    const slug = getWorkNameSlug(work);
     if (slug) {
       navigate(`/work/${slug}`);
     } else {
@@ -449,7 +451,7 @@ function Work() {
                     </button>
                   </div>
                   <button
-                    onClick={() => handleReadMore(item.slug)}
+                    onClick={() => handleReadMore(item)}
                     className="text-[#1893DB] hover:underline text-sm flex items-center gap-1"
                   >
                     Read More →
