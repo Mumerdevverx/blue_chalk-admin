@@ -175,6 +175,14 @@ function WorkDetail() {
               }}
             />
           )}
+          {aboutContent.contextText && (
+            <p
+              className="whitespace-pre-wrap"
+              style={{ color: '#C2BBB6', fontSize: '24px', lineHeight: '29px', fontWeight: 400 }}
+            >
+              {aboutContent.contextText}
+            </p>
+          )}
           {aboutContent.left || aboutContent.right ? (
             <div className="mt-8 grid gap-8 md:grid-cols-2">
               <section>
@@ -205,7 +213,7 @@ function WorkDetail() {
               </section>
             </div>
           ) : null}
-          {!aboutContent.content && !aboutContent.left && !aboutContent.right && (
+          {!aboutContent.content && !aboutContent.contextText && !aboutContent.left && !aboutContent.right && (
             <p className="text-gray-500">No content provided.</p>
           )}
         </div>
