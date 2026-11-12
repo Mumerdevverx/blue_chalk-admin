@@ -5,6 +5,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
 import getImageUrl from '../../utils/imageUrl';
+import { createWorkAboutContent, getWorkAboutContent } from '../../utils/workAboutContent';
 import {
   getStoredWorkOrders,
   getWorkOrder,
@@ -30,6 +31,8 @@ function Work() {
     buttonText: 'Watch Now',
     award: '',
     aboutContent: '',
+    aboutLeftText: '',
+    aboutRightText: '',
     showOverlay: false,
     overlayType: '',
     order: ''
@@ -133,22 +136,33 @@ function Work() {
     }));
   };
 
-  const handleContentChange = (value) => {
-    setFormData(prev => ({ ...prev, aboutContent: value }));
+  const handleContentChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.image.trim()) return alert('Image is required');
-    if (!formData.aboutContent.trim()) return alert('About Content is required');
+    if (!formData.aboutContent.trim() && !editingWork?.legacyAboutColumns) {
+      return alert('About Content is required');
+    }
     const order = Number(formData.order);
     if (!Number.isInteger(order) || order < 1) return alert('Order must be a whole number greater than 0');
 
     setIsSaving(true);
     try {
       const payload = Object.fromEntries(
-        Object.entries(formData).filter(([key]) => key !== 'order')
+        Object.entries(formData).filter(([key]) => (
+          !['order', 'aboutLeftText', 'aboutRightText'].includes(key)
+        ))
       );
+      if (formData.aboutLeftText.trim() || formData.aboutRightText.trim()) {
+        payload.aboutContent = createWorkAboutContent(
+          formData.aboutContent,
+          formData.aboutLeftText,
+          formData.aboutRightText
+        );
+      }
       let savedWork;
       if (editingWork) {
         const response = await workService.update(editingWork._id, payload);
@@ -251,6 +265,8 @@ function Work() {
       buttonText: 'Watch Now',
       award: '',
       aboutContent: '',
+      aboutLeftText: '',
+      aboutRightText: '',
       showOverlay: false,
       overlayType: '',
       order: ''
@@ -259,17 +275,21 @@ function Work() {
   };
 
   const handleEdit = (work) => {
-    setEditingWork(work);
+    const aboutContent = getWorkAboutContent(work.aboutContent);
+    setEditingWork({ ...work, legacyAboutColumns: aboutContent.legacyColumns });
     setFormData({
       category: work.category || 'All Projects',
       image: work.image || '',
       buttonText: work.buttonText || 'Watch Now',
       award: work.award || '',
-      aboutContent: work.aboutContent || '',
+      aboutContent: aboutContent.content,
+      aboutLeftText: aboutContent.left,
+      aboutRightText: aboutContent.right,
       showOverlay: work.showOverlay || false,
       overlayType: work.overlayType || '',
       order: getWorkOrderForCategory(work, activeCategory, storedOrders)
     });
+    setEditingWork({ ...work, legacyAboutColumns: aboutContent.legacyColumns });
     setShowModal(true);
   };
 
@@ -609,10 +629,40 @@ function Work() {
                   <label className="block text-sm font-medium mb-1">About Content *</label>
                   <TipTapEditor
                     value={formData.aboutContent}
-                    onChange={handleContentChange}
+                    onChange={(value) => handleContentChange('aboutContent', value)}
                   />
                   <p className="text-xs text-gray-400 mt-1">Add text, images, videos – HTML content</p>
                 </div>
+
+                <section className="rounded-lg border border-gray-300 p-4">
+                  <h3 className="mb-3 text-sm font-semibold text-gray-800">About Us Content</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label htmlFor="aboutLeftText" className="mb-1 block text-sm font-medium">Left Content</label>
+                      <textarea
+                        id="aboutLeftText"
+                        name="aboutLeftText"
+                        value={formData.aboutLeftText}
+                        onChange={handleChange}
+                        rows={5}
+                        className="w-full rounded border p-3"
+                        placeholder="Enter left-side content"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="aboutRightText" className="mb-1 block text-sm font-medium">Right Content</label>
+                      <textarea
+                        id="aboutRightText"
+                        name="aboutRightText"
+                        value={formData.aboutRightText}
+                        onChange={handleChange}
+                        rows={5}
+                        className="w-full rounded border p-3"
+                        placeholder="Enter right-side content"
+                      />
+                    </div>
+                  </div>
+                </section>
 
                 {/* Show Overlay */}
                 <label className="flex items-center gap-2">
