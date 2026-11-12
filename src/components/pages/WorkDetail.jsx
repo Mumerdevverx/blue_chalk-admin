@@ -4,6 +4,7 @@ import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { workService } from '../../services/workService';
 import getImageUrl from '../../utils/imageUrl';
 import { getWorkAboutContent } from '../../utils/workAboutContent';
+import { getWorkNameSlug } from '../../utils/workSlug';
 
 const getYouTubeVideoId = (value) => {
   try {
@@ -99,7 +100,9 @@ function WorkDetail() {
             : Array.isArray(response)
               ? response
               : [];
-          foundWork = works.find((item) => item.slug === slug) || null;
+          foundWork = works.find((item) => (
+            item.slug === slug || getWorkNameSlug(item) === slug
+          )) || null;
         }
 
         if (foundWork) {
