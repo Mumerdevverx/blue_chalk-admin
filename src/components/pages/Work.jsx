@@ -31,6 +31,7 @@ function Work() {
     buttonText: 'Watch Now',
     award: '',
     aboutContent: '',
+    aboutContextText: '',
     aboutLeftText: '',
     aboutRightText: '',
     showOverlay: false,
@@ -153,14 +154,15 @@ function Work() {
     try {
       const payload = Object.fromEntries(
         Object.entries(formData).filter(([key]) => (
-          !['order', 'aboutLeftText', 'aboutRightText'].includes(key)
+          !['order', 'aboutContextText', 'aboutLeftText', 'aboutRightText'].includes(key)
         ))
       );
-      if (formData.aboutLeftText.trim() || formData.aboutRightText.trim()) {
+      if (formData.aboutContextText.trim() || formData.aboutLeftText.trim() || formData.aboutRightText.trim()) {
         payload.aboutContent = createWorkAboutContent(
           formData.aboutContent,
           formData.aboutLeftText,
-          formData.aboutRightText
+          formData.aboutRightText,
+          formData.aboutContextText
         );
       }
       let savedWork;
@@ -265,6 +267,7 @@ function Work() {
       buttonText: 'Watch Now',
       award: '',
       aboutContent: '',
+      aboutContextText: '',
       aboutLeftText: '',
       aboutRightText: '',
       showOverlay: false,
@@ -283,6 +286,7 @@ function Work() {
       buttonText: work.buttonText || 'Watch Now',
       award: work.award || '',
       aboutContent: aboutContent.content,
+      aboutContextText: aboutContent.contextText,
       aboutLeftText: aboutContent.left,
       aboutRightText: aboutContent.right,
       showOverlay: work.showOverlay || false,
@@ -636,6 +640,19 @@ function Work() {
 
                 <section className="rounded-lg border border-gray-300 p-4">
                   <h3 className="mb-3 text-sm font-semibold text-gray-800">About Us Content</h3>
+                  <div className="mb-4">
+                    <label htmlFor="aboutContextText" className="mb-1 block text-sm font-medium">Context Text</label>
+                    <textarea
+                      id="aboutContextText"
+                      name="aboutContextText"
+                      value={formData.aboutContextText}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full rounded border p-3"
+                      placeholder="Enter context text"
+                      style={{ color: '#C2BBB6', fontSize: '24px', lineHeight: '29px', fontWeight: 400 }}
+                    />
+                  </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <label htmlFor="aboutLeftText" className="mb-1 block text-sm font-medium">Left Content</label>

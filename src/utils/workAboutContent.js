@@ -5,16 +5,17 @@ const escapeHtml = (value) => value
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
-export const createWorkAboutContent = (content, left, right) => (
+export const createWorkAboutContent = (content, left, right, contextText) => (
   `<div data-work-about-content="true">` +
   `<div data-work-main-content="true">${content}</div>` +
   `<div data-work-left-text="true">${escapeHtml(left)}</div>` +
   `<div data-work-right-text="true">${escapeHtml(right)}</div>` +
+  `<div data-work-context-text="true">${escapeHtml(contextText)}</div>` +
   '</div>'
 );
 
 export const getWorkAboutContent = (value) => {
-  const result = { content: value || '', left: '', right: '', legacyColumns: false };
+  const result = { content: value || '', left: '', right: '', contextText: '', legacyColumns: false };
   if (!value || typeof DOMParser === 'undefined') return result;
 
   const parsed = new DOMParser().parseFromString(value, 'text/html');
@@ -25,6 +26,7 @@ export const getWorkAboutContent = (value) => {
       content: wrappedContent.querySelector('[data-work-main-content="true"]')?.innerHTML || '',
       left: wrappedContent.querySelector('[data-work-left-text="true"]')?.textContent || '',
       right: wrappedContent.querySelector('[data-work-right-text="true"]')?.textContent || '',
+      contextText: wrappedContent.querySelector('[data-work-context-text="true"]')?.textContent || '',
       legacyColumns: false
     };
   }
@@ -35,6 +37,7 @@ export const getWorkAboutContent = (value) => {
       content: '',
       left: oldColumns.querySelector('[data-work-about-column="left"]')?.textContent || '',
       right: oldColumns.querySelector('[data-work-about-column="right"]')?.textContent || '',
+      contextText: '',
       legacyColumns: true
     };
   }
@@ -66,6 +69,7 @@ export const getWorkAboutContent = (value) => {
     content: '',
     left: getText(legacyColumns.left),
     right: getText(legacyColumns.right),
+    contextText: '',
     legacyColumns: true
   };
 };
