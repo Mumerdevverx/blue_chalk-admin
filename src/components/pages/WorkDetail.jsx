@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import homeService from '../../services/homeService';
 import { workService } from '../../services/workService';
 import getImageUrl from '../../utils/imageUrl';
 import { getWorkAboutContent } from '../../utils/workAboutContent';
@@ -77,6 +78,7 @@ const normalizeVideoPreviews = (html, poster) => {
 function WorkDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [work, setWork] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,6 +86,16 @@ function WorkDetail() {
   useEffect(() => {
     const fetchWork = async () => {
       try {
+<<<<<<< HEAD
+=======
+        if (location.state?.work && location.state.routeSlug === slug) {
+          setWork(location.state.work);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
+>>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
         let foundWork = null;
 
         try {
@@ -103,6 +115,28 @@ function WorkDetail() {
           foundWork = works.find((item) => (
             item.slug === slug || getWorkNameSlug(item) === slug
           )) || null;
+<<<<<<< HEAD
+=======
+
+          if (!foundWork) {
+            const homeResponse = await homeService.getHomeItems();
+            const homeItems = Array.isArray(homeResponse?.data)
+              ? homeResponse.data
+              : Array.isArray(homeResponse)
+                ? homeResponse
+                : [];
+            const homeItem = homeItems.find(
+              (item) => getWorkNameSlug({ title: item.title }) === slug
+            );
+            foundWork = works.find((item) => item.slug === homeItem?.workSlug) || null;
+
+            if (!foundWork && homeItem?.workSlug) {
+              const linkedResponse = await workService.getBySlug(homeItem.workSlug);
+              foundWork = linkedResponse?.data
+                || (linkedResponse?.success === undefined ? linkedResponse : null);
+            }
+          }
+>>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
         }
 
         if (foundWork) {
@@ -118,7 +152,7 @@ function WorkDetail() {
       }
     };
     fetchWork();
-  }, [slug]);
+  }, [slug, location.state]);
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this work?')) return;
