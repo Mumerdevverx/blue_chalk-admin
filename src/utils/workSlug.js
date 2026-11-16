@@ -1,5 +1,5 @@
 export const getWorkNameSlug = (work) => {
-  const name = work?.buttonText || work?.title || work?.name || work?.slug || '';
+  const name = work?.title || work?.buttonText || work?.name || work?.slug || '';
 
   return String(name)
     .replace(/&nbsp;|nbsp/gi, ' ')
