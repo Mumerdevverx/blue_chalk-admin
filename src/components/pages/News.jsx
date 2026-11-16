@@ -6,10 +6,15 @@ import TipTapEditor from '../TipTapEditor';
 import NewsImageControls from '../pages/NewsImageControls'; // ✅ IMPORT
 import getImageUrl from '../../utils/imageUrl';
 
+const NEWS_PER_PAGE = 25;
+
 function News() {
   const navigate = useNavigate();
   const [news, setNews] = useState([]);
+  const [totalNews, setTotalNews] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingEditId, setLoadingEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,22 +31,20 @@ function News() {
     loadNews();
   }, []);
 
-  const loadNews = async () => {
+  const loadNews = async (requestedPage = 1) => {
     setLoading(true);
     try {
-      const res = await newsService.getAllNews();
-      const sortedNews = [...(res.data || [])].sort((firstItem, secondItem) => {
-        const firstDate = new Date(firstItem.createdAt).getTime();
-        const secondDate = new Date(secondItem.createdAt).getTime();
-
-        return firstDate - secondDate;
-      });
-      setNews(sortedNews);
+      const res = await newsService.getAllNews(requestedPage, NEWS_PER_PAGE);
+      const newsItems = Array.isArray(res.data) ? res.data : [];
+      setNews(newsItems);
+      setTotalNews(Number.isInteger(res.count) ? res.count : newsItems.length);
+      setCurrentPage(requestedPage);
     } catch (error) {
       console.error('Error loading news:', error);
       alert('Failed to load news');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleChange = (e) => {
@@ -121,17 +124,27 @@ function News() {
     setEditingNews(null);
   };
 
-  const handleEdit = (newsItem) => {
-    setEditingNews(newsItem);
-    setFormData({
-      title: newsItem.title,
-      image: newsItem.image,
-      date: newsItem.date,
-      description: newsItem.description,
-      content: newsItem.content || '',
-      excerpt: newsItem.excerpt || ''
-    });
-    setShowModal(true);
+  const handleEdit = async (newsItem) => {
+    setLoadingEditId(newsItem._id);
+    try {
+      const response = await newsService.getNewsById(newsItem._id);
+      const fullNews = response.data;
+      setEditingNews(fullNews);
+      setFormData({
+        title: fullNews.title,
+        image: fullNews.image,
+        date: fullNews.date,
+        description: fullNews.description,
+        content: fullNews.content || '',
+        excerpt: fullNews.excerpt || ''
+      });
+      setShowModal(true);
+    } catch (error) {
+      console.error('Error loading news for editing:', error);
+      alert(error.response?.data?.message || 'Failed to load news for editing');
+    } finally {
+      setLoadingEditId(null);
+    }
   };
 
   const handleReadMore = (slug) => {
@@ -150,7 +163,10 @@ function News() {
     });
   };
 
-  if (loading) {
+  const totalPages = Math.ceil(totalNews / NEWS_PER_PAGE);
+  const page = Math.min(currentPage, Math.max(totalPages, 1));
+
+  if (loading && news.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -166,12 +182,13 @@ function News() {
           <div>
             <h1 className="text-3xl font-bold text-gray-800">📰 News Management</h1>
             <p className="text-gray-500 text-sm mt-1">
-              {news.length} articles found
+              {totalNews} articles found
             </p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={loadNews}
+              disabled={loading}
               className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2"
             >
               <FiRefreshCw /> Refresh
@@ -188,6 +205,12 @@ function News() {
           </div>
         </div>
 
+        {loading && (
+          <p className="text-sm text-blue-600 mb-4" role="status">
+            Loading news...
+          </p>
+        )}
+
         {/* News Cards */}
         {news.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -196,7 +219,8 @@ function News() {
             <p className="text-gray-400 text-sm mt-2">Click "Add News" to create your first article.</p>
           </div>
         ) : (
-          <div className="grid gap-6">
+          <>
+            <div className="grid gap-6">
             {news.map((item) => (
               <div key={item._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="flex flex-col md:flex-row">
@@ -204,6 +228,8 @@ function News() {
                     <img
                       src={getImageUrl(item.image)}
                       alt={item.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
@@ -226,8 +252,9 @@ function News() {
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(item)}
+                          disabled={loadingEditId !== null}
                           className="text-yellow-500 hover:text-yellow-700 p-1"
-                          title="Edit"
+                          title={loadingEditId === item._id ? 'Loading article...' : 'Edit'}
                         >
                           <FiEdit2 size={18} />
                         </button>
@@ -266,7 +293,50 @@ function News() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+            {totalPages > 1 && (
+              <div className="mt-6">
+                <p className="text-center text-sm text-gray-500 mb-3">
+                  Showing {(page - 1) * NEWS_PER_PAGE + 1}-
+                  {Math.min(page * NEWS_PER_PAGE, totalNews)} of {totalNews} articles
+                </p>
+                <div className="flex flex-wrap justify-center items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => loadNews(page - 1)}
+                    disabled={loading || page === 1}
+                    className="px-4 py-2 rounded-lg bg-white text-gray-700 shadow disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      onClick={() => loadNews(pageNumber)}
+                      disabled={loading}
+                      aria-current={pageNumber === page ? 'page' : undefined}
+                      className={`w-10 h-10 rounded-lg shadow ${
+                        pageNumber === page
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => loadNews(page + 1)}
+                    disabled={loading || page === totalPages}
+                    className="px-4 py-2 rounded-lg bg-white text-gray-700 shadow disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ========== ADD/EDIT MODAL ========== */}
