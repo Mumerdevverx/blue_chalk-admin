@@ -353,6 +353,27 @@ function Work() {
     }
   };
 
+  const handleClearAllProjects = () => {
+    if (!window.confirm('Remove all works from All Projects? The work records and their categories will not be deleted.')) {
+      return;
+    }
+
+    const updatedOrders = {
+      ...storedOrders,
+      AllProjects: [],
+      All: {}
+    };
+
+    try {
+      localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
+      setStoredOrders(updatedOrders);
+      setAllProjectOrderDraft({});
+    } catch (error) {
+      console.error('Error clearing All Projects:', error);
+      alert('Failed to clear All Projects');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -398,13 +419,20 @@ function Work() {
         </div>
 
         {activeCategory === 'All' && (
-          <div className="mb-5">
+          <div className="mb-5 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={openAllOrderModal}
               className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Set All Projects Order
+            </button>
+            <button
+              type="button"
+              onClick={handleClearAllProjects}
+              className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+            >
+              Clear All Projects
             </button>
           </div>
         )}
