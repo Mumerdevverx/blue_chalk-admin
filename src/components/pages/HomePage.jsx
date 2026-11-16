@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import homeService from '../../services/homeService'
 import { workService } from '../../services/workService'
 import getImageUrl from '../../utils/imageUrl'
-<<<<<<< HEAD
-=======
 import { getWorkNameSlug } from '../../utils/workSlug'
->>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
 import { getStoredWorkOrders, getWorkOrderForCategory } from '../../utils/workOrder'
 
 export default function HomePage() {
@@ -27,10 +24,7 @@ export default function HomePage() {
   const [imagePage, setImagePage] = useState(1)
   const imagesPerPage = 6
   const storedWorkOrders = getStoredWorkOrders()
-<<<<<<< HEAD
-=======
 
->>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
   const sortedWorks = [...works].sort((a, b) => {
     const orderA = Number(getWorkOrderForCategory(a, 'All', storedWorkOrders))
     const orderB = Number(getWorkOrderForCategory(b, 'All', storedWorkOrders))
@@ -75,19 +69,12 @@ export default function HomePage() {
 
       if (res.success) {
         const storedOrders = getStoredWorkOrders()
-<<<<<<< HEAD
-        setWorks((res.data || []).map((work) => ({
-          ...work,
-          order: getWorkOrderForCategory(work, 'All', storedOrders)
-        })))
-=======
         setWorks(
           (res.data || []).map((work) => ({
             ...work,
             order: getWorkOrderForCategory(work, 'All', storedOrders)
           }))
         )
->>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
       }
     } catch (error) {
       console.error('Error loading works:', error)
@@ -757,19 +744,6 @@ export default function HomePage() {
                   >
                     <option value="">Select Work Project</option>
 
-<<<<<<< HEAD
-                    <option value="">
-                      Select Work Project
-                    </option>
-
-                    {sortedWorks.map((work) => (
-
-                      <option
-                        key={work._id}
-                        value={work.slug}
-                      >
-                        {getWorkOrder(work) || '—'}. {getWorkOptionLabel(work)}
-=======
                     {sortedWorks.map((work) => (
                       <option key={work._id} value={work.slug}>
                         {getWorkOrderForCategory(
@@ -778,7 +752,6 @@ export default function HomePage() {
                           storedWorkOrders
                         ) || '—'}
                         . {getWorkOptionLabel(work)}
->>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
                       </option>
                     ))}
                   </select>

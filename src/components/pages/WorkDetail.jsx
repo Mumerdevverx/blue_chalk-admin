@@ -86,8 +86,6 @@ function WorkDetail() {
   useEffect(() => {
     const fetchWork = async () => {
       try {
-<<<<<<< HEAD
-=======
         if (location.state?.work && location.state.routeSlug === slug) {
           setWork(location.state.work);
           setError(null);
@@ -95,7 +93,6 @@ function WorkDetail() {
           return;
         }
 
->>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
         let foundWork = null;
 
         try {
@@ -115,8 +112,6 @@ function WorkDetail() {
           foundWork = works.find((item) => (
             item.slug === slug || getWorkNameSlug(item) === slug
           )) || null;
-<<<<<<< HEAD
-=======
 
           if (!foundWork) {
             const homeResponse = await homeService.getHomeItems();
@@ -136,7 +131,6 @@ function WorkDetail() {
                 || (linkedResponse?.success === undefined ? linkedResponse : null);
             }
           }
->>>>>>> 6418787e0e8b8fcf5e77156e8f5ce8ce21040e3d
         }
 
         if (foundWork) {
