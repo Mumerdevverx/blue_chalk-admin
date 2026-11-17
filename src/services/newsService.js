@@ -1,8 +1,10 @@
 import API from '../api/axios';
 
 export const newsService = {
-  getAllNews: async () => {
-    const response = await API.get('/api/news');
+  getAllNews: async (page = 1, limit = 25) => {
+    const response = await API.get('/api/news', {
+      params: { page, limit, summary: true }
+    });
     return response.data;
   },
   getNewsBySlug: async (slug) => {
