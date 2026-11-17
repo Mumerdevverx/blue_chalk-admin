@@ -31,12 +31,15 @@ function News() {
     loadNews();
   }, []);
 
-  const loadNews = async (requestedPage = 1) => {
+ const loadNews = async (requestedPage = 1) => {
     setLoading(true);
     try {
       const res = await newsService.getAllNews(requestedPage, NEWS_PER_PAGE);
       const newsItems = Array.isArray(res.data) ? res.data : [];
-      setNews(newsItems);
+      
+      // ❌ Yahan se reverse() hata dein, seedha set karein
+      setNews(newsItems); 
+      
       setTotalNews(Number.isInteger(res.count) ? res.count : newsItems.length);
       setCurrentPage(requestedPage);
     } catch (error) {
