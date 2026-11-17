@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { workService } from '../../services/workService';
-import { FiEdit2, FiTrash2, FiPlus, FiRefreshCw } from 'react-icons/fi';
+import {
+  FiArrowDown,
+  FiArrowUp,
+  FiEdit2,
+  FiPlus,
+  FiRefreshCw,
+  FiTrash2
+} from 'react-icons/fi';
 import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
 import getImageUrl from '../../utils/imageUrl';
@@ -9,8 +16,6 @@ import { createWorkAboutContent, getWorkAboutContent } from '../../utils/workAbo
 import { getWorkNameSlug } from '../../utils/workSlug';
 import {
   getStoredWorkOrders,
-  getWorkOrder,
-  getWorkOrderForCategory,
   WORK_ORDER_STORAGE_KEY
 } from '../../utils/workOrder';
 
@@ -22,8 +27,7 @@ function Work() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showAllOrderModal, setShowAllOrderModal] = useState(false);
-  const [allOrderCategory, setAllOrderCategory] = useState('Featured');
-  const [allProjectOrderDraft, setAllProjectOrderDraft] = useState({});
+  const [allProjectOrderDraft, setAllProjectOrderDraft] = useState([]);
   const [editingWork, setEditingWork] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,9 +67,29 @@ function Work() {
     return 0;
   });
 
+  const savedAllProjectOrders = storedOrders.All
+    && typeof storedOrders.All === 'object'
+    && !Array.isArray(storedOrders.All)
+    ? storedOrders.All
+    : {};
+
   // ✅ FIXED FILTER: Ab saari categories show hongi, local storage ka jhanjhat khatam
+  const allProjectsSortedWorks = works
+    .filter((item) => String(item.category || '').trim().toLowerCase() !== 'award')
+    .sort((a, b) => {
+      const orderA = Number(savedAllProjectOrders[a._id]);
+      const orderB = Number(savedAllProjectOrders[b._id]);
+      const hasOrderA = Number.isFinite(orderA) && orderA > 0;
+      const hasOrderB = Number.isFinite(orderB) && orderB > 0;
+
+      if (hasOrderA && hasOrderB) return orderA - orderB;
+      if (hasOrderA) return -1;
+      if (hasOrderB) return 1;
+      return 0;
+    });
+
   const filteredWorks = activeCategory === 'All'
-    ? sortedWorks.filter((item) => String(item.category || '').trim().toLowerCase() !== 'award')
+    ? allProjectsSortedWorks
     : sortedWorks.filter((item) => {
         const itemCat = String(item.category || '').trim().toLowerCase();
         const activeCat = String(activeCategory || '').trim().toLowerCase();
@@ -79,23 +103,12 @@ function Work() {
         return itemCat === activeCat;
       });
 
-  const allOrderCategories = categories.filter(
-    (category) => category.value !== 'All' && category.value !== 'Award'
-  );
-  
-  const allOrderWorks = works
-    .filter((work) => work.category === allOrderCategory)
-    .sort((a, b) => {
-      const orderA = Number(getWorkOrderForCategory(a, allOrderCategory, storedOrders));
-      const orderB = Number(getWorkOrderForCategory(b, allOrderCategory, storedOrders));
-      const hasOrderA = Number.isFinite(orderA) && orderA > 0;
-      const hasOrderB = Number.isFinite(orderB) && orderB > 0;
-
-      if (hasOrderA && hasOrderB) return orderA - orderB;
-      if (hasOrderA) return -1;
-      if (hasOrderB) return 1;
-      return 0;
-    });
+  const allProjectOrderIds = Array.isArray(allProjectOrderDraft)
+    ? allProjectOrderDraft.filter((id) => typeof id === 'string')
+    : [];
+  const allOrderWorks = allProjectOrderIds
+    .map((id) => works.find((work) => work._id === id))
+    .filter(Boolean);
 
   useEffect(() => {
     loadWorks();
@@ -246,23 +259,17 @@ function Work() {
   };
 
   const openAllOrderModal = () => {
-    setAllProjectOrderDraft({ ...(storedOrders.All || {}) });
-    setAllOrderCategory('Featured');
+    setAllProjectOrderDraft(allProjectsSortedWorks.map((work) => work._id));
     setShowAllOrderModal(true);
   };
 
   const handleSaveAllProjectOrders = () => {
-    const validOrders = Object.fromEntries(
-      Object.entries(allProjectOrderDraft)
-        .filter(([, value]) => Number.isInteger(Number(value)) && Number(value) > 0)
-        .map(([id, value]) => [id, Number(value)])
+    const orders = Object.fromEntries(
+      allProjectOrderIds.map((id, index) => [id, index + 1])
     );
-    const allProjectIds = new Set(storedOrders.AllProjects || []);
-    Object.keys(validOrders).forEach((id) => allProjectIds.add(id));
     const updatedOrders = {
       ...storedOrders,
-      All: validOrders,
-      AllProjects: [...allProjectIds]
+      All: orders
     };
 
     try {
@@ -284,11 +291,24 @@ function Work() {
     try {
       localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
       setStoredOrders(updatedOrders);
-      setAllProjectOrderDraft({});
+      setAllProjectOrderDraft([]);
+      setShowAllOrderModal(false);
     } catch (error) {
       console.error('Error clearing All Projects order:', error);
       alert('Failed to clear All Projects order');
     }
+  };
+
+  const moveAllProject = (index, direction) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= allProjectOrderDraft.length) return;
+
+    setAllProjectOrderDraft((current) => {
+      const next = Array.isArray(current) ? [...current] : [];
+      if (index >= next.length || nextIndex >= next.length) return next;
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
   };
 
   const handleClearAllProjects = () => {
@@ -305,7 +325,7 @@ function Work() {
     try {
       localStorage.setItem(WORK_ORDER_STORAGE_KEY, JSON.stringify(updatedOrders));
       setStoredOrders(updatedOrders);
-      setAllProjectOrderDraft({});
+      setAllProjectOrderDraft([]);
     } catch (error) {
       console.error('Error clearing All Projects:', error);
       alert('Failed to clear All Projects');
@@ -356,6 +376,18 @@ function Work() {
           </div>
         </div>
 
+        {activeCategory === 'All' && (
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={openAllOrderModal}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              Reorder All Projects
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredWorks.map((item, index) => (
             <div key={item._id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-xl transition">
@@ -368,7 +400,9 @@ function Work() {
               />
               <div className="p-4">
                 <p className="text-sm font-bold text-blue-600">
-                  Order: {item.order || index + 1}
+                  Order: {activeCategory === 'All'
+                    ? (savedAllProjectOrders[item._id] || index + 1)
+                    : (item.order || index + 1)}
                 </p>
                 <p className="text-sm font-semibold text-gray-700">Category: {item.category}</p>
                 <p className="text-sm text-gray-600 mt-1">
@@ -408,6 +442,83 @@ function Work() {
         </div>
         {filteredWorks.length === 0 && (
           <p className="py-10 text-center text-gray-500">No works found in this category.</p>
+        )}
+
+        {showAllOrderModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6">
+              <h2 className="mb-2 text-2xl font-bold">Reorder All Projects</h2>
+              <p className="mb-4 text-sm text-gray-600">
+                Move projects to set their order in All Projects. Other category orders will not change.
+              </p>
+
+              <div className="space-y-2">
+                {allOrderWorks.map((work, index) => (
+                  <div
+                    key={work._id}
+                    className="flex items-center gap-3 rounded border border-gray-200 p-3"
+                  >
+                    <span className="w-8 shrink-0 text-center font-semibold text-gray-600">
+                      {index + 1}.
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium text-gray-800">
+                      {work.buttonText || 'Untitled project'}
+                    </span>
+                    <span className="shrink-0 text-sm text-gray-500">{work.category}</span>
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveAllProject(index, -1)}
+                        disabled={index === 0}
+                        aria-label={`Move ${work.buttonText || 'project'} up`}
+                        className="rounded border p-2 text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <FiArrowUp />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveAllProject(index, 1)}
+                        disabled={index === allOrderWorks.length - 1}
+                        aria-label={`Move ${work.buttonText || 'project'} down`}
+                        className="rounded border p-2 text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <FiArrowDown />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {allOrderWorks.length === 0 && (
+                  <p className="py-8 text-center text-gray-500">No projects found.</p>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-between gap-2 border-t pt-4">
+                <button
+                  type="button"
+                  onClick={handleClearAllProjectOrders}
+                  className="rounded border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50"
+                >
+                  Clear Order
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllOrderModal(false)}
+                    className="rounded border px-4 py-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAllProjectOrders}
+                    className="rounded bg-blue-600 px-5 py-2 text-white hover:bg-blue-700"
+                  >
+                    Save Order
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {showModal && (
