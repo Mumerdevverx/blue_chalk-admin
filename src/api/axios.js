@@ -1,7 +1,13 @@
 import axios from "axios";
 
+let rawBaseURL = import.meta.env.VITE_API_URL || 'https://bluechalk-backend.vercel.app';
+if (rawBaseURL.includes('blue-chalk-backend.vercel.app')) {
+  rawBaseURL = rawBaseURL.replace('blue-chalk-backend.vercel.app', 'bluechalk-backend.vercel.app');
+}
+const baseURL = String(rawBaseURL).replace(/\/+$/, '');
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL,
 });
 
 API.interceptors.request.use((config) => {

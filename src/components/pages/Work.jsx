@@ -12,7 +12,8 @@ import {
   FiSave,
   FiCheck,
   FiAlertCircle,
-  FiRotateCcw
+  FiRotateCcw,
+  FiLoader
 } from 'react-icons/fi';
 import ImagePicker from '../../components/ImagePicker';
 import TipTapEditor from '../../components/TipTapEditor';
@@ -20,36 +21,20 @@ import getImageUrl from '../../utils/imageUrl';
 import { createWorkAboutContent, getWorkAboutContent } from '../../utils/workAboutContent';
 import { getWorkNameSlug } from '../../utils/workSlug';
 
-function sortAllProjects(items) {
-  return items
-    .filter((item) => String(item.category || '').trim().toLowerCase() !== 'award')
-    .sort((a, b) => {
-      const orderA = Number(a.order);
-      const orderB = Number(b.order);
-      const hasOrderA = Number.isFinite(orderA) && orderA > 0;
-      const hasOrderB = Number.isFinite(orderB) && orderB > 0;
-
-      if (hasOrderA && hasOrderB) return orderA - orderB;
-      if (hasOrderA) return -1;
-      if (hasOrderB) return 1;
-
-      const dateA = new Date(a.createdAt || 0);
-      const dateB = new Date(b.createdAt || 0);
-      return dateA - dateB || String(a._id).localeCompare(String(b._id));
-    });
-}
+const CHUNK_SIZE = 12;
 
 function Work() {
   const navigate = useNavigate();
-  const [works, setWorks] = useState([]);
-  const [orderedAllProjects, setOrderedAllProjects] = useState([]);
+  const [projectsByCategory, setProjectsByCategory] = useState({});
   const [activeCategory, setActiveCategory] = useState('All');
-  const [loading, setLoading] = useState(true);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [orderSaveStatus, setOrderSaveStatus] = useState({ type: '', message: '' });
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [editingWork, setEditingWork] = useState(null);
@@ -78,62 +63,140 @@ function Work() {
     { label: 'Award', value: 'Award' }
   ];
 
-  // Specific category works keep their original/default ordering (untouched)
-  const categoryWorks = activeCategory === 'All'
-    ? []
-    : works
-        .filter((item) => {
-          const itemCat = String(item.category || '').trim().toLowerCase();
-          const activeCat = String(activeCategory || '').trim().toLowerCase();
+  // Helper function to fetch chunks progressively
+  const loadCategoryChunks = async (categoryKey, forceReset = false) => {
+    if (forceReset || !projectsByCategory[categoryKey] || projectsByCategory[categoryKey].length === 0) {
+      setIsCategoryLoading(true);
+    }
+    setIsLoadingMore(false);
+    setOrderSaveStatus({ type: '', message: '' });
 
-          if (activeCat === 'branded' || activeCat === 'brand') {
-            return itemCat === 'branded' || itemCat === 'brand';
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        if (page > 1) {
+          setIsLoadingMore(true);
+        }
+
+        const data = await workService.getCategoryChunk(categoryKey, page, CHUNK_SIZE);
+        const chunkItems = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+
+        setProjectsByCategory((prev) => {
+          const currentList = forceReset && page === 1 ? [] : (prev[categoryKey] || []);
+          const existingIds = new Set(currentList.map((item) => String(item._id)));
+          const uniqueChunk = chunkItems.filter((item) => !existingIds.has(String(item._id)));
+
+          if (page === 1) {
+            return {
+              ...prev,
+              [categoryKey]: chunkItems
+            };
           }
-          if (activeCat === 'award' || activeCat === 'awards') {
-            return itemCat === 'award' || itemCat === 'awards';
-          }
-          return itemCat === activeCat;
-        })
-        .sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0);
-          const dateB = new Date(b.createdAt || 0);
-          return dateA - dateB || String(a._id).localeCompare(String(b._id));
+
+          return {
+            ...prev,
+            [categoryKey]: [...currentList, ...uniqueChunk]
+          };
         });
 
-  const displayedWorks = activeCategory === 'All' ? orderedAllProjects : categoryWorks;
+        // Display chunk 1 immediately as soon as response arrives
+        if (page === 1) {
+          setIsCategoryLoading(false);
+        }
 
-  useEffect(() => {
-    loadWorks();
-  }, []);
-
-  const loadWorks = async () => {
-    setLoading(true);
-    setOrderSaveStatus({ type: '', message: '' });
-    try {
-      const res = await workService.getAll();
-      const items = Array.isArray(res?.data)
-        ? res.data
-        : Array.isArray(res)
-          ? res
-          : [];
-
-      const normalizedItems = items.map((item) => ({
-        ...item,
-        category: item.category?.trim().toLowerCase() === 'awards'
-          ? 'Award'
-          : item.category
-      }));
-
-      setWorks(normalizedItems);
-      const sortedAll = sortAllProjects(normalizedItems);
-      setOrderedAllProjects(sortedAll);
-      setHasOrderChanges(false);
-    } catch (error) {
-      console.error('Error loading works:', error);
-      alert('Failed to load works');
+        hasMore = Boolean(data?.hasMore) && chunkItems.length > 0;
+        page += 1;
+      } catch (error) {
+        console.error(`Error loading chunk ${page} for ${categoryKey}:`, error);
+        hasMore = false;
+      }
     }
-    setLoading(false);
+
+    setIsCategoryLoading(false);
+    setIsLoadingMore(false);
   };
+
+  // Progressive chunk loading for the selected category:
+  // - Displays chunk 1 (12 items) immediately upon receiving response.
+  // - Directly calls next chunk and merges with existing list without page reload.
+  // - For All Projects, chunks arrive in saved order (1-12, 13-24, etc.).
+  useEffect(() => {
+    let isCancelled = false;
+    const categoryKey = activeCategory;
+
+    // If already cached, show immediately
+    const cached = projectsByCategory[categoryKey];
+    if (!cached || cached.length === 0) {
+      setIsCategoryLoading(true);
+    } else {
+      setIsCategoryLoading(false);
+    }
+    setIsLoadingMore(false);
+    setHasOrderChanges(false);
+    setOrderSaveStatus({ type: '', message: '' });
+
+    const fetchCategoryData = async () => {
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore && !isCancelled) {
+        try {
+          if (page > 1 && !isCancelled) {
+            setIsLoadingMore(true);
+          }
+
+          const data = await workService.getCategoryChunk(categoryKey, page, CHUNK_SIZE);
+          if (isCancelled) break;
+
+          const chunkItems = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+
+          setProjectsByCategory((prev) => {
+            const currentList = prev[categoryKey] || [];
+            const existingIds = new Set(currentList.map((item) => String(item._id)));
+            const uniqueChunk = chunkItems.filter((item) => !existingIds.has(String(item._id)));
+
+            if (page === 1) {
+              return {
+                ...prev,
+                [categoryKey]: chunkItems
+              };
+            }
+
+            return {
+              ...prev,
+              [categoryKey]: [...currentList, ...uniqueChunk]
+            };
+          });
+
+          // Display chunk 1 immediately
+          if (page === 1 && !isCancelled) {
+            setIsCategoryLoading(false);
+          }
+
+          hasMore = Boolean(data?.hasMore) && chunkItems.length > 0;
+          page += 1;
+        } catch (error) {
+          console.error(`Error fetching category chunks for ${categoryKey}:`, error);
+          hasMore = false;
+        }
+      }
+
+      if (!isCancelled) {
+        setIsCategoryLoading(false);
+        setIsLoadingMore(false);
+      }
+    };
+
+    fetchCategoryData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeCategory]);
+
+  const displayedWorks = projectsByCategory[activeCategory] || [];
 
   // Drag and Drop Handlers for All Projects
   const handleDragStart = (e, index) => {
@@ -158,11 +221,14 @@ function Work() {
       return;
     }
 
-    const updated = [...orderedAllProjects];
-    const [moved] = updated.splice(draggedIndex, 1);
-    updated.splice(dropIndex, 0, moved);
+    const currentList = [...(projectsByCategory['All'] || [])];
+    const [moved] = currentList.splice(draggedIndex, 1);
+    currentList.splice(dropIndex, 0, moved);
 
-    setOrderedAllProjects(updated);
+    setProjectsByCategory((prev) => ({
+      ...prev,
+      All: currentList
+    }));
     setHasOrderChanges(true);
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -176,21 +242,29 @@ function Work() {
   // Up/Down buttons for All Projects reordering
   const moveItemUp = (index) => {
     if (index <= 0) return;
-    const updated = [...orderedAllProjects];
-    const temp = updated[index - 1];
-    updated[index - 1] = updated[index];
-    updated[index] = temp;
-    setOrderedAllProjects(updated);
+    const currentList = [...(projectsByCategory['All'] || [])];
+    const temp = currentList[index - 1];
+    currentList[index - 1] = currentList[index];
+    currentList[index] = temp;
+
+    setProjectsByCategory((prev) => ({
+      ...prev,
+      All: currentList
+    }));
     setHasOrderChanges(true);
   };
 
   const moveItemDown = (index) => {
-    if (index >= orderedAllProjects.length - 1) return;
-    const updated = [...orderedAllProjects];
-    const temp = updated[index + 1];
-    updated[index + 1] = updated[index];
-    updated[index] = temp;
-    setOrderedAllProjects(updated);
+    const currentList = [...(projectsByCategory['All'] || [])];
+    if (index >= currentList.length - 1) return;
+    const temp = currentList[index + 1];
+    currentList[index + 1] = currentList[index];
+    currentList[index] = temp;
+
+    setProjectsByCategory((prev) => ({
+      ...prev,
+      All: currentList
+    }));
     setHasOrderChanges(true);
   };
 
@@ -200,7 +274,8 @@ function Work() {
     setOrderSaveStatus({ type: '', message: '' });
 
     try {
-      const projectIds = orderedAllProjects.map((item) => item._id);
+      const allProjects = projectsByCategory['All'] || [];
+      const projectIds = allProjects.map((item) => item._id);
       await workService.saveOrder(projectIds);
 
       setHasOrderChanges(false);
@@ -209,13 +284,11 @@ function Work() {
         message: 'Order saved successfully! Public All Projects section will now display this order.'
       });
 
-      // Update local works order values
-      setWorks((prevWorks) =>
-        prevWorks.map((work) => {
-          const idx = projectIds.indexOf(work._id);
-          return idx !== -1 ? { ...work, order: idx + 1 } : work;
-        })
-      );
+      // Update local works order numbers
+      setProjectsByCategory((prev) => ({
+        ...prev,
+        All: allProjects.map((item, idx) => ({ ...item, order: idx + 1 }))
+      }));
 
       setTimeout(() => {
         setOrderSaveStatus((prev) => (prev.type === 'success' ? { type: '', message: '' } : prev));
@@ -232,8 +305,8 @@ function Work() {
   };
 
   const handleResetOrder = () => {
-    const original = sortAllProjects(works);
-    setOrderedAllProjects(original);
+    // Re-fetch All Projects order from database
+    loadCategoryChunks('All', true);
     setHasOrderChanges(false);
     setOrderSaveStatus({ type: '', message: '' });
   };
@@ -288,7 +361,12 @@ function Work() {
       setShowModal(false);
       setEditingWork(null);
       resetForm();
-      await loadWorks();
+
+      // Refresh active category without page reload
+      loadCategoryChunks(activeCategory, true);
+      if (activeCategory !== 'All') {
+        loadCategoryChunks('All', true);
+      }
     } catch (error) {
       console.error('Error saving work:', error);
       alert('Failed to save work');
@@ -301,16 +379,25 @@ function Work() {
     if (!window.confirm('Delete this work? It will be removed from all categories.')) return;
     try {
       await workService.delete(work._id);
+
+      // Remove from all cached category lists immediately
+      setProjectsByCategory((prev) => {
+        const next = {};
+        for (const [cat, list] of Object.entries(prev)) {
+          next[cat] = list.filter((item) => String(item._id) !== String(work._id));
+        }
+        return next;
+      });
+
       alert('✅ Deleted');
-      loadWorks();
     } catch (error) {
       alert('Delete failed');
     }
   };
 
   const resetForm = (category = 'All Projects') => {
-    // Default order is set to the end of the All Projects list
-    const defaultNextOrder = orderedAllProjects.length + 1;
+    const allList = projectsByCategory['All'] || [];
+    const defaultNextOrder = allList.length + 1;
     setFormData({
       category,
       image: '',
@@ -327,23 +414,50 @@ function Work() {
     setEditingWork(null);
   };
 
-  const handleEdit = (work) => {
-    const aboutContent = getWorkAboutContent(work.aboutContent);
-    setEditingWork({ ...work, legacyAboutColumns: aboutContent.legacyColumns });
-    setFormData({
-      category: work.category || 'All Projects',
-      image: work.image || '',
-      buttonText: work.buttonText || 'Watch Now',
-      award: work.award || '',
-      aboutContent: aboutContent.content,
-      aboutContextText: aboutContent.contextText,
-      aboutLeftText: aboutContent.left,
-      aboutRightText: aboutContent.right,
-      showOverlay: work.showOverlay || false,
-      overlayType: work.overlayType || '',
-      order: work.order || ''
-    });
-    setShowModal(true);
+  const handleEdit = async (work) => {
+    try {
+      setIsFetchingDetail(true);
+      // Fetch full work by ID to obtain complete aboutContent for the editor
+      const res = await workService.getById(work._id);
+      const fullWork = res?.data || res || work;
+      const aboutContent = getWorkAboutContent(fullWork.aboutContent);
+
+      setEditingWork({ ...fullWork, legacyAboutColumns: aboutContent.legacyColumns });
+      setFormData({
+        category: fullWork.category || 'All Projects',
+        image: fullWork.image || '',
+        buttonText: fullWork.buttonText || 'Watch Now',
+        award: fullWork.award || '',
+        aboutContent: aboutContent.content,
+        aboutContextText: aboutContent.contextText,
+        aboutLeftText: aboutContent.left,
+        aboutRightText: aboutContent.right,
+        showOverlay: fullWork.showOverlay || false,
+        overlayType: fullWork.overlayType || '',
+        order: fullWork.order || ''
+      });
+      setShowModal(true);
+    } catch (err) {
+      console.error('Failed to load full work details:', err);
+      const aboutContent = getWorkAboutContent(work.aboutContent);
+      setEditingWork({ ...work, legacyAboutColumns: aboutContent.legacyColumns });
+      setFormData({
+        category: work.category || 'All Projects',
+        image: work.image || '',
+        buttonText: work.buttonText || 'Watch Now',
+        award: work.award || '',
+        aboutContent: aboutContent.content,
+        aboutContextText: aboutContent.contextText,
+        aboutLeftText: aboutContent.left,
+        aboutRightText: aboutContent.right,
+        showOverlay: work.showOverlay || false,
+        overlayType: work.overlayType || '',
+        order: work.order || ''
+      });
+      setShowModal(true);
+    } finally {
+      setIsFetchingDetail(false);
+    }
   };
 
   const handleReadMore = (work) => {
@@ -355,26 +469,26 @@ function Work() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Top Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">🎬 Work Management</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">🎬 Work Management</h1>
+            {isLoadingMore && (
+              <span className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+                <FiLoader className="animate-spin text-sm" /> Loading more items...
+              </span>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
-              onClick={loadWorks}
+              onClick={() => loadCategoryChunks(activeCategory, true)}
               className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2 cursor-pointer transition-colors"
+              title="Refresh this category"
             >
-              <FiRefreshCw /> Refresh
+              <FiRefreshCw className={isCategoryLoading ? 'animate-spin' : ''} /> Refresh
             </button>
             <button
               onClick={() => {
@@ -483,119 +597,128 @@ function Work() {
           </div>
         )}
 
-        {/* Works Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayedWorks.map((item, index) => {
-            const isAllProjectsTab = activeCategory === 'All';
-            const isDragged = draggedIndex === index;
-            const isOver = dragOverIndex === index;
+        {/* Initial Category Loading State */}
+        {isCategoryLoading && displayedWorks.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-sm text-gray-500">Loading {activeCategory === 'All' ? 'All Projects' : activeCategory}...</p>
+          </div>
+        ) : (
+          /* Works Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {displayedWorks.map((item, index) => {
+              const isAllProjectsTab = activeCategory === 'All';
+              const isDragged = draggedIndex === index;
+              const isOver = dragOverIndex === index;
 
-            return (
-              <div
-                key={item._id}
-                draggable={isAllProjectsTab}
-                onDragStart={isAllProjectsTab ? (e) => handleDragStart(e, index) : undefined}
-                onDragOver={isAllProjectsTab ? (e) => handleDragOver(e, index) : undefined}
-                onDrop={isAllProjectsTab ? (e) => handleDrop(e, index) : undefined}
-                onDragEnd={isAllProjectsTab ? handleDragEnd : undefined}
-                className={`bg-white rounded-lg shadow overflow-hidden transition-all duration-200 flex flex-col justify-between ${
-                  isAllProjectsTab ? 'cursor-grab active:cursor-grabbing select-none' : ''
-                } ${isDragged ? 'opacity-40 scale-95 border-2 border-blue-400' : ''} ${
-                  isOver && !isDragged ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:shadow-lg'
-                }`}
-              >
-                {/* Reordering Header on Card (ONLY in All Projects) */}
-                {isAllProjectsTab && (
-                  <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FiMove className="text-gray-400 hover:text-gray-600 cursor-move" title="Drag to reorder" />
-                      <span className="bg-blue-600 text-white font-bold text-xs px-2 py-0.5 rounded">
-                        #{index + 1}
-                      </span>
+              return (
+                <div
+                  key={item._id}
+                  draggable={isAllProjectsTab}
+                  onDragStart={isAllProjectsTab ? (e) => handleDragStart(e, index) : undefined}
+                  onDragOver={isAllProjectsTab ? (e) => handleDragOver(e, index) : undefined}
+                  onDrop={isAllProjectsTab ? (e) => handleDrop(e, index) : undefined}
+                  onDragEnd={isAllProjectsTab ? handleDragEnd : undefined}
+                  className={`bg-white rounded-lg shadow overflow-hidden transition-all duration-200 flex flex-col justify-between ${
+                    isAllProjectsTab ? 'cursor-grab active:cursor-grabbing select-none' : ''
+                  } ${isDragged ? 'opacity-40 scale-95 border-2 border-blue-400' : ''} ${
+                    isOver && !isDragged ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:shadow-lg'
+                  }`}
+                >
+                  {/* Reordering Header on Card (ONLY in All Projects) */}
+                  {isAllProjectsTab && (
+                    <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FiMove className="text-gray-400 hover:text-gray-600 cursor-move" title="Drag to reorder" />
+                        <span className="bg-blue-600 text-white font-bold text-xs px-2 py-0.5 rounded">
+                          #{index + 1}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveItemUp(index);
+                          }}
+                          disabled={index === 0}
+                          title="Move Up"
+                          className="p-1 rounded text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          <FiArrowUp className="text-sm" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveItemDown(index);
+                          }}
+                          disabled={index === displayedWorks.length - 1}
+                          title="Move Down"
+                          className="p-1 rounded text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          <FiArrowDown className="text-sm" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveItemUp(index);
-                        }}
-                        disabled={index === 0}
-                        title="Move Up"
-                        className="p-1 rounded text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        <FiArrowUp className="text-sm" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveItemDown(index);
-                        }}
-                        disabled={index === displayedWorks.length - 1}
-                        title="Move Down"
-                        className="p-1 rounded text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        <FiArrowDown className="text-sm" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                <div>
-                  <img
-                    src={getImageUrl(item.image)}
-                    alt={item.title || 'Work'}
-                    className="w-full h-48 object-cover"
-                    loading="lazy"
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=No+Image'; }}
-                  />
-                  <div className="p-4">
-                    <p className="text-sm font-bold text-blue-600">
-                      Order: {isAllProjectsTab ? index + 1 : (item.order || index + 1)}
-                    </p>
-                    <p className="text-sm font-semibold text-gray-700">Category: {item.category}</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">Title Button:</span> {item.buttonText || 'Watch Now'}
-                    </p>
-                    {item.award && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">Award:</span> {item.award}
+                  <div>
+                    <img
+                      src={getImageUrl(item.image)}
+                      alt={item.title || item.buttonText || 'Work'}
+                      className="w-full h-48 object-cover"
+                      loading="lazy"
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=No+Image'; }}
+                    />
+                    <div className="p-4">
+                      <p className="text-sm font-bold text-blue-600">
+                        Order: {isAllProjectsTab ? index + 1 : (item.order || index + 1)}
                       </p>
-                    )}
+                      <p className="text-sm font-semibold text-gray-700">Category: {item.category}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Title Button:</span> {item.buttonText || 'Watch Now'}
+                      </p>
+                      {item.award && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Award:</span> {item.award}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="p-4 pt-0">
-                  <div className="flex items-center justify-between mt-3 border-t pt-3">
-                    <div className="flex gap-2">
+                  <div className="p-4 pt-0">
+                    <div className="flex items-center justify-between mt-3 border-t pt-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          disabled={isFetchingDetail}
+                          className="text-yellow-600 hover:text-yellow-800 text-sm cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <FiEdit2 className="text-xs" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="text-red-600 hover:text-red-800 text-sm cursor-pointer flex items-center gap-1"
+                        >
+                          <FiTrash2 className="text-xs" /> Delete
+                        </button>
+                      </div>
                       <button
-                        onClick={() => handleEdit(item)}
-                        className="text-yellow-600 hover:text-yellow-800 text-sm cursor-pointer flex items-center gap-1"
+                        onClick={() => handleReadMore(item)}
+                        className="text-[#1893DB] hover:underline text-sm flex items-center gap-1 cursor-pointer"
                       >
-                        <FiEdit2 className="text-xs" /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="text-red-600 hover:text-red-800 text-sm cursor-pointer flex items-center gap-1"
-                      >
-                        <FiTrash2 className="text-xs" /> Delete
+                        Read More →
                       </button>
                     </div>
-                    <button
-                      onClick={() => handleReadMore(item)}
-                      className="text-[#1893DB] hover:underline text-sm flex items-center gap-1 cursor-pointer"
-                    >
-                      Read More →
-                    </button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {displayedWorks.length === 0 && (
+        {!isCategoryLoading && displayedWorks.length === 0 && (
           <p className="py-10 text-center text-gray-500">No works found in this category.</p>
         )}
 

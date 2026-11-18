@@ -2,6 +2,37 @@
 import API from '../api/axios';
 
 export const workService = {
+  // Get category chunk (12 items per chunk)
+  getCategoryChunk: async (category, page = 1, limit = 12) => {
+    const cat = String(category || '').trim().toLowerCase();
+    let endpoint = `/api/work/category/${encodeURIComponent(category)}`;
+    if (cat === 'all' || cat === 'all projects' || cat === 'all-projects') {
+      endpoint = '/api/work/all-projects';
+    } else if (cat === 'featured') {
+      endpoint = '/api/work/featured';
+    } else if (cat === 'brand' || cat === 'branded') {
+      endpoint = '/api/work/branded';
+    } else if (cat === 'entertainment') {
+      endpoint = '/api/work/entertainment';
+    } else if (cat === 'social impact' || cat === 'social-impact') {
+      endpoint = '/api/work/social-impact';
+    } else if (cat === 'documentary') {
+      endpoint = '/api/work/documentary';
+    } else if (cat === 'award' || cat === 'awards') {
+      endpoint = '/api/work/award';
+    }
+
+    const res = await API.get(endpoint, {
+      params: {
+        page,
+        limit,
+        includeInactive: true
+      }
+    });
+
+    return res.data;
+  },
+
   // Get all works with complete content
   getAll: async () => {
     const res = await API.get('/api/work', {
