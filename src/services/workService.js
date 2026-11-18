@@ -44,5 +44,17 @@ export const workService = {
   delete: async (id) => {
     const res = await API.delete(`/api/work/${id}`);
     return res.data;
+  },
+
+  // Get All Projects order
+  getOrder: async () => {
+    const res = await API.get('/api/work/all-projects/order');
+    return res.data;
+  },
+
+  // Save All Projects order
+  saveOrder: async (projectIds) => {
+    const res = await API.put('/api/work/all-projects/order', { projectIds });
+    return res.data;
   }
 };
