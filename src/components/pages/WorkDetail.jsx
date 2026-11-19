@@ -97,6 +97,10 @@ function WorkDetail() {
 
         try {
           const response = await workService.getBySlug(slug);
+          if (response && response.type === 'award' && response.data) {
+            navigate('/awards', { replace: true });
+            return;
+          }
           foundWork = response?.data || (response?.success === undefined ? response : null);
         } catch {
           // Try the work list when the slug endpoint is unavailable or has stale data.

@@ -22,15 +22,30 @@ export const workService = {
       endpoint = '/api/work/award';
     }
 
-    const res = await API.get(endpoint, {
-      params: {
-        page,
-        limit,
-        includeInactive: true
-      }
-    });
+    try {
+      const res = await API.get(endpoint, {
+        params: {
+          page,
+          limit,
+          includeInactive: true
+        }
+      });
 
-    return res.data;
+      return res.data;
+    } catch (error) {
+      if ((cat === 'award' || cat === 'awards') && error?.response?.status === 404) {
+        const fallbackRes = await API.get('/api/work', {
+          params: {
+            category: 'Award',
+            page,
+            limit,
+            includeInactive: true
+          }
+        });
+        return fallbackRes.data;
+      }
+      throw error;
+    }
   },
 
   // Get all works with complete content

@@ -4,6 +4,7 @@ import ImagePicker from "../../ImagePicker";
 import TipTapEditor from "../../TipTapEditor";
 import getImageUrl from "../../../utils/imageUrl";
 import { workService } from "../../../services/workService";
+import { awardService } from "../../../services/awardService";
 
 const normalizeWorkLinks = (description = "", works = [], awards = []) => {
   if (!description || typeof DOMParser === "undefined") return description;
@@ -80,8 +81,6 @@ const normalizeWorkLinks = (description = "", works = [], awards = []) => {
       if (slugMatch?.slug) {
         link.setAttribute("href", `/work/${slugMatch.slug}`);
         link.setAttribute("target", "_self");
-      } else if (workSlug) {
-        link.remove();
       }
     } catch {
       // Leave invalid link URLs unchanged.
@@ -169,10 +168,10 @@ const applyAwardOrders = (items) => {
 
   return items.map((award, index) => ({
     ...award,
-    order: isValidOrder(storedOrders[award._id])
-      ? Number(storedOrders[award._id])
-      : isValidOrder(award.order)
-        ? Number(award.order)
+    order: isValidOrder(award.order)
+      ? Number(award.order)
+      : isValidOrder(storedOrders[award._id])
+        ? Number(storedOrders[award._id])
         : index + 1,
   }));
 };
@@ -236,11 +235,11 @@ export default function AwardsManager() {
     try {
       setLoading(true);
 
-      const res = await API.get("/api/awards");
-      const items = Array.isArray(res.data)
+      const res = await awardService.getAll({ includeInactive: true });
+      const items = Array.isArray(res?.data)
         ? res.data
-        : Array.isArray(res.data?.data)
-          ? res.data.data
+        : Array.isArray(res)
+          ? res
           : [];
       setAwards(applyAwardOrders(items));
     } catch (error) {
@@ -353,35 +352,31 @@ export default function AwardsManager() {
 
     try {
       const formData = {
-        ...form,
+        title: form.title.trim(),
         order: Number(form.order) || 0,
+        year: form.year?.trim() || String(new Date().getFullYear()),
+        category: form.category?.trim() || "Awards",
+        breadcrumb: form.breadcrumb?.trim() || "Awards",
+        image: form.image,
         slug: awards.find((award) => award._id === editingId)?.slug,
         description: normalizeWorkLinks(form.description, works, awards),
       };
 
       if (editingId) {
         // UPDATE
-        await API.put(`/api/awards/${editingId}`, formData);
+        await awardService.update(editingId, formData);
         storeAwardOrder(editingId, formData.order);
-        setAwards((currentAwards) =>
-          currentAwards.map((award) =>
-            award._id === editingId ? { ...award, ...formData } : award
-          )
-        );
       } else {
         // CREATE
-        const response = await API.post("/api/awards", formData);
-        const createdAward = response.data?.data;
+        const response = await awardService.create(formData);
+        const createdAward = response?.data || (response?._id ? response : null);
         if (createdAward?._id) {
           storeAwardOrder(createdAward._id, formData.order);
-          setAwards((currentAwards) => [
-            ...currentAwards,
-            { ...createdAward, ...formData },
-          ]);
         }
       }
 
       handleCloseModal();
+      await loadAwards();
       setSaveMessage(isEditing ? "Award updated successfully." : "Award saved successfully.");
     } catch (error) {
       console.error("Error saving award:", error);
@@ -404,7 +399,7 @@ export default function AwardsManager() {
     if (!confirmed) return;
 
     try {
-      await API.delete(`/api/awards/${id}`);
+      await awardService.delete(id);
 
       removeStoredAwardOrder(id);
       await loadAwards();

@@ -1,10 +1,13 @@
-const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://blue-chalk-backend.vercel.app'
+let configuredApiUrl = import.meta.env.VITE_API_URL || 'https://bluechalk-backend.vercel.app'
+if (configuredApiUrl.includes('blue-chalk-backend.vercel.app')) {
+  configuredApiUrl = configuredApiUrl.replace('blue-chalk-backend.vercel.app', 'bluechalk-backend.vercel.app')
+}
 
 const getBackendOrigin = () => {
   try {
     return new URL(configuredApiUrl).origin
   } catch {
-    return 'https://blue-chalk-backend.vercel.app'
+    return 'https://bluechalk-backend.vercel.app'
   }
 }
 

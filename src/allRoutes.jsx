@@ -37,6 +37,7 @@ export default function AllRoutes() {
           <Route path="gallery" element={<GalleryManager />} />
           <Route path="clients" element={<ClientsManager />} />
           <Route path="awards" element={<AwardsManager />} />
+          <Route path="awards/:slug" element={<AwardsManager />} />
           <Route path="team" element={<TeamManager />} />
 
           {/* Other routes */}
