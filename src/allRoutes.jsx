@@ -11,6 +11,7 @@ import NewsDetail from './components/pages/NewsDetail'
 import Work from './components/pages/Work'
 import WorkDetail from './components/pages/WorkDetail'
 import FooterSettings from './components/pages/FooterSettings'
+import EmailSettings from './components/pages/EmailSettings'
 
 
 // ✅ Correct imports (inside components/pages/about/)
@@ -47,6 +48,7 @@ export default function AllRoutes() {
           <Route path="work" element={<Work />} />
           <Route path="work/:slug" element={<WorkDetail />} />
           <Route path="footer" element={<FooterSettings />} />
+          <Route path="email-settings" element={<EmailSettings />} />
         </Route>
       </Route>
 

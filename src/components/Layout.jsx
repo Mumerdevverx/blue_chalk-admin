@@ -11,6 +11,7 @@ import {
   Newspaper,
   Clapperboard,
   Settings,
+  Mail,
   LogOut,
   ChevronDown,
 } from "lucide-react";
@@ -70,6 +71,11 @@ export default function Layout() {
       name: "Footer",
       path: "/footer",
       icon: Settings,
+    },
+    {
+      name: "Email & SMTP",
+      path: "/email-settings",
+      icon: Mail,
     },
   ];
 
