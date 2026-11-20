@@ -50,6 +50,7 @@ function Work() {
     aboutRightText: '',
     showOverlay: false,
     overlayType: '',
+    showInAllProjects: true,
     order: ''
   });
 
@@ -376,21 +377,40 @@ function Work() {
   };
 
   const handleDelete = async (work) => {
-    if (!window.confirm('Delete this work? It will be removed from all categories.')) return;
+    const isFromAll = activeCategory === 'All' || activeCategory === 'All Projects';
+    const hasOtherCategory =
+      work.category &&
+      !['All', 'All Projects', 'all-projects'].includes(String(work.category).trim());
+
+    const confirmMessage = isFromAll && hasOtherCategory
+      ? `Remove "${work.title || work.buttonText || 'this project'}" from All Projects?\n\nIt will be removed from All Projects only, and will remain preserved in "${work.category}".`
+      : `Delete "${work.title || work.buttonText || 'this project'}"?\n\nThis will permanently delete it.`;
+
+    if (!window.confirm(confirmMessage)) return;
+
     try {
-      await workService.delete(work._id);
+      await workService.delete(work._id, activeCategory);
 
-      // Remove from all cached category lists immediately
-      setProjectsByCategory((prev) => {
-        const next = {};
-        for (const [cat, list] of Object.entries(prev)) {
-          next[cat] = list.filter((item) => String(item._id) !== String(work._id));
-        }
-        return next;
-      });
-
-      alert('✅ Deleted');
+      if (isFromAll && hasOtherCategory) {
+        // Remove only from 'All' tab in local state; keep in its category tab!
+        setProjectsByCategory((prev) => ({
+          ...prev,
+          All: (prev['All'] || []).filter((item) => String(item._id) !== String(work._id))
+        }));
+        alert(`✅ Removed from All Projects (preserved in ${work.category})`);
+      } else {
+        // Full delete: remove from all cached category lists immediately
+        setProjectsByCategory((prev) => {
+          const next = {};
+          for (const [cat, list] of Object.entries(prev)) {
+            next[cat] = list.filter((item) => String(item._id) !== String(work._id));
+          }
+          return next;
+        });
+        alert('✅ Deleted');
+      }
     } catch (error) {
+      console.error('Delete failed:', error);
       alert('Delete failed');
     }
   };
@@ -409,6 +429,7 @@ function Work() {
       aboutRightText: '',
       showOverlay: false,
       overlayType: '',
+      showInAllProjects: true,
       order: defaultNextOrder
     });
     setEditingWork(null);
@@ -434,6 +455,7 @@ function Work() {
         aboutRightText: aboutContent.right,
         showOverlay: fullWork.showOverlay || false,
         overlayType: fullWork.overlayType || '',
+        showInAllProjects: fullWork.showInAllProjects !== false,
         order: fullWork.order || ''
       });
       setShowModal(true);
@@ -452,6 +474,7 @@ function Work() {
         aboutRightText: aboutContent.right,
         showOverlay: work.showOverlay || false,
         overlayType: work.overlayType || '',
+        showInAllProjects: work.showInAllProjects !== false,
         order: work.order || ''
       });
       setShowModal(true);
@@ -676,6 +699,11 @@ function Work() {
                         Order: {isAllProjectsTab ? index + 1 : (item.order || index + 1)}
                       </p>
                       <p className="text-sm font-semibold text-gray-700">Category: {item.category}</p>
+                      {item.showInAllProjects === false && (
+                        <span className="inline-block mt-1 bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded border border-amber-200">
+                          Hidden from All Projects
+                        </span>
+                      )}
                       <p className="text-sm text-gray-600 mt-1">
                         <span className="font-medium">Title Button:</span> {item.buttonText || 'Watch Now'}
                       </p>
@@ -839,10 +867,22 @@ function Work() {
                   </div>
                 </section>
 
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" name="showOverlay" checked={formData.showOverlay} onChange={handleChange} />
-                  Show Overlay
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      name="showInAllProjects"
+                      checked={formData.showInAllProjects !== false}
+                      onChange={handleChange}
+                    />
+                    <span className="text-sm font-medium text-gray-700">Show in All Projects</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" name="showOverlay" checked={formData.showOverlay} onChange={handleChange} />
+                    <span className="text-sm font-medium text-gray-700">Show Overlay</span>
+                  </label>
+                </div>
 
                 {formData.showOverlay && (
                   <input

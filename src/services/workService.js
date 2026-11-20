@@ -87,8 +87,12 @@ export const workService = {
   },
 
   // Delete work
-  delete: async (id) => {
-    const res = await API.delete(`/api/work/${id}`);
+  delete: async (id, fromCategory) => {
+    const config = {};
+    if (fromCategory) {
+      config.params = { fromCategory };
+    }
+    const res = await API.delete(`/api/work/${id}`, config);
     return res.data;
   },
 
